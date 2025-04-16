@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify
 import discord
 from discord.ext import commands
 
+# Flask App
 app = Flask(__name__)
 
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
@@ -13,8 +14,8 @@ CHANNEL_ID = 1362080053583937716
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-player_data = {}
-main_message = None
+player_data = {}  # เก็บข้อมูลโดยใช้ username เป็น key
+main_message = None  # ข้อความหลักที่เราจะแก้ไข
 
 @app.route('/')
 def home():
@@ -28,31 +29,11 @@ def update():
     data = request.json
     username = data.get("username")
     if username:
-        player_data[username] = data
+        player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
         print(f"Updated data for {username}: {data}")
     return {"status": "ok", "received": data}
 
-class PlayerSelect(discord.ui.Select):
-    def __init__(self):
-        options = [
-            discord.SelectOption(label=username, description="คลิกเพื่อดูข้อมูล")
-            for username in list(player_data.keys())[:25]  # Discord จำกัดสูงสุด 25
-        ] or [discord.SelectOption(label="ไม่มีข้อมูล", value="none", default=True)]
-        super().__init__(placeholder="เลือกผู้เล่น", options=options, custom_id="player_select")
-
-    async def callback(self, interaction: discord.Interaction):
-        username = self.values[0]
-        data = player_data.get(username)
-        if not data:
-            await interaction.response.send_message("ไม่พบข้อมูลผู้เล่น", ephemeral=True)
-            return
-
-        embed = discord.Embed(title=f"ข้อมูลของ {username}", color=discord.Color.green())
-        embed.add_field(name="จำนวนเงิน", value=data.get('cash', 'N/A'), inline=False)
-        embed.add_field(name="ผู้เล่นในเซิร์ฟ", value=data.get('playerCount', 'N/A'), inline=False)
-        embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data.get('serverName', 'N/A'), inline=False)
-        await interaction.response.edit_message(embed=embed, view=self.view)
-
+# Discord UI Dropdown
 class PlayerDropdown(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -60,32 +41,62 @@ class PlayerDropdown(discord.ui.View):
 
     def update_options(self):
         self.clear_items()
-        self.add_item(PlayerSelect())
+        if player_data:
+            self.add_item(PlayerSelect())
+            self.add_item(ViewAllButton())
+            self.add_item(CloseButton())
+
+class PlayerSelect(discord.ui.Select):
+    def __init__(self):
+        options = [
+            discord.SelectOption(label=username, description=f"ดูข้อมูลของ {username}")
+            for username in player_data
+        ]
+        super().__init__(placeholder="เลือกชื่อผู้เล่น", options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        selected_username = self.values[0]
+        data = player_data.get(selected_username)
+        if data:
+            embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.green())
+            embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
+            embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playerCount']), inline=False)
+            embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['serverName'], inline=False)
+            await interaction.response.edit_message(embed=embed, view=self.view)
+
+class ViewAllButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="ดูผู้เล่นทั้งหมด", style=discord.ButtonStyle.green)
+
+    async def callback(self, interaction: discord.Interaction):
+        embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
+        for username, data in player_data.items():
+            embed.add_field(name=username, value=f"จำนวนเงิน: {data['cash']}", inline=False)
+        await interaction.response.edit_message(embed=embed, view=self.view)
+
+class CloseButton(discord.ui.Button):
+    def __init__(self):
+        super().__init__(label="ปิด", style=discord.ButtonStyle.red)
+
+    async def callback(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(content="ข้อมูลปิดแล้ว", embed=None, view=None)
 
 async def send_main_message():
     global main_message
     await bot.wait_until_ready()
     channel = bot.get_channel(CHANNEL_ID)
-
-    embed = discord.Embed(
-        title="ข้อมูลผู้เล่น Roblox",
-        description="เลือกชื่อผู้เล่นเพื่อดูรายละเอียด",
-        color=discord.Color.blue()
-    )
-    view = PlayerDropdown()
-
+    
     if main_message is None:
+        embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
+        view = PlayerDropdown()
         main_message = await channel.send(embed=embed, view=view)
 
     while True:
-        try:
-            # แก้ไข dropdown ทุก ๆ 15 วินาที
-            embed.description = "อัปเดตล่าสุดแล้ว • คลิกชื่อผู้เล่นเพื่อดูข้อมูล"
-            new_view = PlayerDropdown()
-            await main_message.edit(embed=embed, view=new_view)
-        except Exception as e:
-            print("Error updating message:", e)
-        await asyncio.sleep(15)
+        if main_message:
+            view = PlayerDropdown()
+            embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
+            await main_message.edit(embed=embed, view=view)
+        await asyncio.sleep(40)  # อัปเดตทุก 40 วินาที
 
 def start_flask():
     app.run(host="0.0.0.0", port=10000)
@@ -94,4 +105,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-
+                
