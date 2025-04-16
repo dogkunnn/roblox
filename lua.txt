@@ -1,0 +1,48 @@
+local HttpService = game:GetService("HttpService")
+
+-- ตั้งค่าลิงก์ปลายทาง
+local endpoint = "https://roblox-l5m8.onrender.com/update"
+
+-- ฟังก์ชันดึงข้อมูลที่ต้องการส่ง
+local function getDataToSend(player)
+	local cash = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Cash")
+	local cashValue = cash and cash.Value or 0
+
+	local data = {
+		username = player.Name,
+		cash = cashValue,
+		playerCount = #game.Players:GetPlayers(),
+		serverName = game.JobId ~= "" and game.JobId or "Local Server"
+	}
+
+	return data
+end
+
+-- ส่งข้อมูลไปยัง Web API
+local function sendData(player)
+	local success, err = pcall(function()
+		local data = getDataToSend(player)
+		local jsonData = HttpService:JSONEncode(data)
+		HttpService:PostAsync(endpoint, jsonData, Enum.HttpContentType.ApplicationJson)
+	end)
+
+	if not success then
+		warn("Failed to send data to Discord Bot:", err)
+	end
+end
+
+-- ส่งเมื่อผู้เล่นเข้ามาใหม่
+game.Players.PlayerAdded:Connect(function(player)
+	-- รอให้ leaderstats โหลดก่อน
+	player.CharacterAdded:Wait()
+	wait(3)
+	sendData(player)
+end)
+
+-- ส่งข้อมูลซ้ำทุก 60 วินาที
+while true do
+	wait(60)
+	for _, player in pairs(game.Players:GetPlayers()) do
+		sendData(player)
+	end
+end
