@@ -96,18 +96,36 @@ class PlayerSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_username = self.values[0]
+        
+        # ตรวจสอบว่าเลือก "ดูข้อมูลทั้งหมด" หรือไม่
         if selected_username == "ดูข้อมูลทั้งหมด":
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
-                embed.add_field(name=username, value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['serverName']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playerCount']}", inline=False)
+                # ตรวจสอบว่า data เป็น dictionary ที่มีคีย์ 'cash', 'serverName', และ 'playerCount'
+                if isinstance(data, dict) and 'cash' in data and 'serverName' in data and 'playerCount' in data:
+                    embed.add_field(
+                        name=username, 
+                        value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['serverName']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playerCount']}",
+                        inline=False
+                    )
+                else:
+                    embed.add_field(
+                        name=username,
+                        value="ข้อมูลไม่ครบถ้วน",
+                        inline=False
+                    )
             await interaction.response.edit_message(embed=embed, view=self.view)
         else:
             data = player_data.get(selected_username)
-            if data:
+            if data and isinstance(data, dict) and 'cash' in data and 'serverName' in data and 'playerCount' in data:
                 embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.green())
                 embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
                 embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playerCount']), inline=False)
                 embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['serverName'], inline=False)
+                await interaction.response.edit_message(embed=embed, view=self.view)
+            else:
+                embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.red())
+                embed.add_field(name="ข้อมูลไม่ครบถ้วน", value="ข้อมูลที่จำเป็นไม่ครบถ้วนหรือยังไม่ได้รับการอัปเดต", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
 
 async def send_main_message():
@@ -134,3 +152,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
+
