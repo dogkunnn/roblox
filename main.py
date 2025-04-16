@@ -39,7 +39,7 @@ def write_data_to_github(data):
             "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ใช้ GitHub Token ของคุณ
             "Content-Type": "application/json"
         }
-
+        sha = "0967ef424bce6791893e9a57bb952f80fd536e93"  # ใส่ SHA ที่ได้ตรงนี้
         # ดึงข้อมูล SHA ของไฟล์ใน repository ปัจจุบัน
         response = requests.get(GITHUB_RAW_API)
         if response.status_code == 200:
