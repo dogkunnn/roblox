@@ -41,10 +41,11 @@ class PlayerDropdown(discord.ui.View):
 
     def update_options(self):
         self.clear_items()
+        # ปุ่มดูข้อมูลทุกคน
+        self.add_item(discord.ui.Button(label="ดูข้อมูลทั้งหมด", style=discord.ButtonStyle.primary, custom_id="view_all"))
+
         if player_data:
             self.add_item(PlayerSelect())
-            self.add_item(ViewAllButton())
-            self.add_item(CloseButton())
 
 class PlayerSelect(discord.ui.Select):
     def __init__(self):
@@ -64,22 +65,13 @@ class PlayerSelect(discord.ui.Select):
             embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['serverName'], inline=False)
             await interaction.response.edit_message(embed=embed, view=self.view)
 
-class ViewAllButton(discord.ui.Button):
-    def __init__(self):
-        super().__init__(label="ดูผู้เล่นทั้งหมด", style=discord.ButtonStyle.green)
-
-    async def callback(self, interaction: discord.Interaction):
+# เพิ่มปุ่มดูข้อมูลทั้งหมด
+    @discord.ui.button(label="ดูข้อมูลทั้งหมด", style=discord.ButtonStyle.secondary)
+    async def view_all(self, interaction: discord.Interaction, button: discord.ui.Button):
         embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
         for username, data in player_data.items():
-            embed.add_field(name=username, value=f"จำนวนเงิน: {data['cash']}", inline=False)
+            embed.add_field(name=f"ชื่อผู้เล่น: {username}", value=f"จำนวนเงิน: {data['cash']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playerCount']}\nชื่อเซิร์ฟเวอร์: {data['serverName']}", inline=False)
         await interaction.response.edit_message(embed=embed, view=self.view)
-
-class CloseButton(discord.ui.Button):
-    def __init__(self):
-        super().__init__(label="ปิด", style=discord.ButtonStyle.red)
-
-    async def callback(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(content="ข้อมูลปิดแล้ว", embed=None, view=None)
 
 async def send_main_message():
     global main_message
@@ -105,4 +97,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-                
+
