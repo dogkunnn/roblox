@@ -18,7 +18,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 
 # URL ของไฟล์ JSON บน GitHub
 GITHUB_URL = "https://raw.githubusercontent.com/dogkunnn/roblox/main/players_data.json"
-GITHUB_RAW_API = "https://raw.githubusercontent.com/dogkunnn/roblox/main/players_data.json"
+GITHUB_RAW_API = "https://api.github.com/repos/dogkunnn/roblox/contents/players_data.json"
 
 # ฟังก์ชันเพื่อดึงข้อมูลจาก GitHub
 def fetch_data_from_github():
@@ -36,12 +36,22 @@ def fetch_data_from_github():
 def write_data_to_github(data):
     try:
         headers = {
-            "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ใส่ GitHub Token ของคุณ
+            "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ใช้ GitHub Token ของคุณ
             "Content-Type": "application/json"
         }
+
+        # ดึงข้อมูล SHA ของไฟล์ใน repository ปัจจุบัน
+        response = requests.get(GITHUB_RAW_API)
+        if response.status_code == 200:
+            sha = response.json().get('sha')
+        else:
+            print(f"Failed to get SHA. Status code: {response.status_code}")
+            return
+
         payload = {
             "message": "Update player data",
-            "content": json.dumps(data, indent=4)
+            "content": json.dumps(data, indent=4),  # ข้อมูลที่อัปเดต
+            "sha": sha  # ต้องใส่ sha ของไฟล์ที่ต้องการแก้ไข
         }
 
         api_url = "https://api.github.com/repos/dogkunnn/roblox/contents/players_data.json"
@@ -152,4 +162,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-
+    
