@@ -5,7 +5,6 @@ from flask import Flask, request, jsonify
 import discord
 from discord.ext import commands
 
-# ตั้งค่า Flask และ Discord Bot
 app = Flask(__name__)
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = 1362080053583937716
@@ -38,19 +37,28 @@ def update():
 class PlayerSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label=username, description=f"ดูข้อมูลของ {username}")
+            discord.SelectOption(label=username, description=f"กดเพื่อดูข้อมูล", emoji="🎮")
             for username in player_data
         ]
-        super().__init__(placeholder="เลือกชื่อผู้เล่น", options=options)
+        super().__init__(
+            placeholder="เลือกผู้เล่นจากรายชื่อ...",
+            min_values=1,
+            max_values=1,
+            options=options
+        )
 
     async def callback(self, interaction: discord.Interaction):
         selected_username = self.values[0]
         data = player_data.get(selected_username)
         if data:
-            embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.green())
-            embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
-            embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playerCount']), inline=False)
-            embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['serverName'], inline=False)
+            embed = discord.Embed(
+                title=f"ข้อมูลของ {selected_username}",
+                color=discord.Color.from_rgb(44, 47, 51)  # สีเทาเข้มแบบ Discord
+            )
+            embed.add_field(name="💰 เงิน", value=f"`{data['cash']}`", inline=True)
+            embed.add_field(name="👥 ผู้เล่นในเซิร์ฟ", value=f"`{data['playerCount']}`", inline=True)
+            embed.add_field(name="🗺️ เซิร์ฟเวอร์", value=f"`{data['serverName']}`", inline=False)
+            embed.set_footer(text="อัปเดตเรียลไทม์ทุก 10 วินาที", icon_url="https://cdn-icons-png.flaticon.com/512/4712/4712039.png")
             await interaction.response.edit_message(embed=embed, view=self.view)
 
 class PlayerDropdown(discord.ui.View):
@@ -64,18 +72,22 @@ class PlayerDropdown(discord.ui.View):
         self.select_menu = PlayerSelect()
         self.add_item(self.select_menu)
 
-
 async def send_main_message():
     global main_message, main_view
     await bot.wait_until_ready()
     channel = bot.get_channel(CHANNEL_ID)
 
-    embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
+    embed = discord.Embed(
+        title="**Roblox Player Monitor**",
+        description="เลือกชื่อผู้เล่นด้านล่างเพื่อดูรายละเอียดแบบเรียลไทม์",
+        color=discord.Color.from_rgb(54, 57, 63)
+    )
+    embed.set_footer(text="ระบบอัปเดตอัตโนมัติทุก 10 วินาที")
+
     main_view = PlayerDropdown()
     main_message = await channel.send(embed=embed, view=main_view)
 
     while True:
-        # อัปเดต dropdown options โดยไม่ส่งข้อความใหม่
         if main_view and main_message:
             main_view.update_options()
             await main_message.edit(view=main_view)
@@ -88,4 +100,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-    
+
