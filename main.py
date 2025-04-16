@@ -1,6 +1,8 @@
 import os
 import threading
 import asyncio
+import json
+import requests
 from flask import Flask, request, jsonify
 import discord
 from discord.ext import commands
@@ -14,8 +16,46 @@ CHANNEL_ID = 1362080053583937716
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-player_data = {}  # เก็บข้อมูลโดยใช้ username เป็น key
-main_message = None  # ข้อความหลักที่เราจะแก้ไข
+# URL ของไฟล์ JSON บน GitHub
+GITHUB_URL = "https://raw.githubusercontent.com/dogkunnn/roblox/main/players_data.json"
+GITHUB_RAW_API = "https://raw.githubusercontent.com/dogkunnn/roblox/main/players_data.json"
+
+# ฟังก์ชันเพื่อดึงข้อมูลจาก GitHub
+def fetch_data_from_github():
+    try:
+        response = requests.get(GITHUB_URL)
+        if response.status_code == 200:
+            return response.json()  # คืนค่าข้อมูล JSON ที่ดึงมา
+        else:
+            return {}
+    except Exception as e:
+        print("Error fetching data from GitHub:", e)
+        return {}
+
+# ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ GitHub
+def write_data_to_github(data):
+    try:
+        # ใช้ GitHub API Token
+        headers = {
+            "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ดึง GitHub Token จาก environment variables
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "message": "Update player data",
+            "content": json.dumps(data, indent=4)
+        }
+
+        api_url = "https://api.github.com/repos/dogkunnn/roblox/contents/players_data.json"
+        response = requests.put(api_url, headers=headers, json=payload)
+        
+        if response.status_code == 200:
+            print("Data successfully written to GitHub.")
+        else:
+            print(f"Failed to write data to GitHub. Status code: {response.status_code}")
+    except Exception as e:
+        print("Error writing data to GitHub:", e)
+
+player_data = fetch_data_from_github()  # โหลดข้อมูลจาก GitHub เมื่อเริ่มรัน
 
 @app.route('/')
 def home():
@@ -31,6 +71,7 @@ def update():
     if username:
         player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
         print(f"Updated data for {username}: {data}")
+        write_data_to_github(player_data)  # เขียนข้อมูลไปที่ GitHub หลังจากอัปเดต
     return {"status": "ok", "received": data}
 
 # Discord UI Dropdown
