@@ -77,7 +77,7 @@ async def send_main_message():
             view = PlayerDropdown()
             embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
             await main_message.edit(embed=embed, view=view)
-        await asyncio.sleep(15)
+        await asyncio.sleep(40)
 
 def start_flask():
     app.run(host="0.0.0.0", port=10000)
