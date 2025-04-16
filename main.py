@@ -29,6 +29,7 @@ def fetch_data_from_supabase():
         if response.status_code == 200:
             return {player['username']: player for player in response.data}
         else:
+            print(f"Error fetching data from Supabase: {response}")
             return {}
     except Exception as e:
         print("Error fetching data from Supabase:", e)
@@ -144,4 +145,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-                    
+
