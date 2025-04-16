@@ -6,6 +6,7 @@ import requests
 from flask import Flask, request, jsonify
 import discord
 from discord.ext import commands
+from supabase import create_client, Client
 
 # Flask App
 app = Flask(__name__)
@@ -13,58 +14,39 @@ app = Flask(__name__)
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
 CHANNEL_ID = 1362080053583937716
 
+# Supabase Setup
+SUPABASE_URL = "https://inlrteqmzgrnhzibkymh.supabase.co"
+SUPABASE_API_KEY = os.getenv("SUPABASE_API_KEY")
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
+
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# URL ของไฟล์ JSON บน GitHub
-GITHUB_URL = "https://raw.githubusercontent.com/dogkunnn/roblox/main/players_data.json"
-GITHUB_RAW_API = "https://api.github.com/repos/dogkunnn/roblox/contents/players_data.json"
-
-# ฟังก์ชันเพื่อดึงข้อมูลจาก GitHub
-def fetch_data_from_github():
+# ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
+def fetch_data_from_supabase():
     try:
-        response = requests.get(GITHUB_URL)
+        response = supabase.table("players").select("*").execute()
         if response.status_code == 200:
-            return response.json()  # คืนค่าข้อมูล JSON ที่ดึงมา
+            return {player['username']: player for player in response.data}
         else:
             return {}
     except Exception as e:
-        print("Error fetching data from GitHub:", e)
+        print("Error fetching data from Supabase:", e)
         return {}
 
-# ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ GitHub
-def write_data_to_github(data):
+# ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ Supabase
+def write_data_to_supabase(data):
     try:
-        headers = {
-            "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ใช้ GitHub Token ของคุณ
-            "Content-Type": "application/json"
-        }
-        sha = "0967ef424bce6791893e9a57bb952f80fd536e93"  # ใส่ SHA ที่ได้ตรงนี้
-        # ดึงข้อมูล SHA ของไฟล์ใน repository ปัจจุบัน
-        response = requests.get(GITHUB_RAW_API)
-        if response.status_code == 200:
-            sha = response.json().get('sha')
-        else:
-            print(f"Failed to get SHA. Status code: {response.status_code}")
-            return
-
-        payload = {
-            "message": "Update player data",
-            "content": json.dumps(data, indent=4),  # ข้อมูลที่อัปเดต
-            "sha": sha  # ต้องใส่ sha ของไฟล์ที่ต้องการแก้ไข
-        }
-
-        api_url = "https://api.github.com/repos/dogkunnn/roblox/contents/players_data.json"
-        response = requests.put(api_url, headers=headers, json=payload)
-
-        if response.status_code == 200:
-            print("Data successfully written to GitHub.")
-        else:
-            print(f"Failed to write data to GitHub. Status code: {response.status_code}")
+        for username, player in data.items():
+            response = supabase.table("players").upsert(player).execute()
+            if response.status_code == 200:
+                print(f"Updated data for {username}")
+            else:
+                print(f"Failed to update data for {username}. Status code: {response.status_code}")
     except Exception as e:
-        print("Error writing data to GitHub:", e)
+        print("Error writing data to Supabase:", e)
 
-player_data = fetch_data_from_github()  # โหลดข้อมูลจาก GitHub เมื่อเริ่มรัน
+player_data = fetch_data_from_supabase()  # โหลดข้อมูลจาก Supabase เมื่อเริ่มรัน
 main_message = None  # กำหนดค่าเริ่มต้นให้กับ main_message
 
 @app.route('/')
@@ -81,7 +63,7 @@ def update():
     if username:
         player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
         print(f"Updated data for {username}: {data}")
-        write_data_to_github(player_data)  # เขียนข้อมูลไปที่ GitHub หลังจากอัปเดต
+        write_data_to_supabase(player_data)  # เขียนข้อมูลไปที่ Supabase หลังจากอัปเดต
     return {"status": "ok", "received": data}
 
 # Discord UI Dropdown
@@ -162,4 +144,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-    
+                    
