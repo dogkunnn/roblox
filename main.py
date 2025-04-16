@@ -69,20 +69,15 @@ async def send_main_message():
     
     if main_message is None:
         embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
-        embed.set_footer(text="ข้อมูลจะอัปเดตทุก 40 วินาที")
         view = PlayerDropdown()
         main_message = await channel.send(embed=embed, view=view)
 
     while True:
         if main_message:
-            # สร้าง Embed ที่มีรายชื่อผู้เล่นทั้งหมดด้านล่าง
-            player_list = "\n".join([f"{i+1}. {username}" for i, username in enumerate(player_data)])
-            embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
-            embed.add_field(name="รายชื่อผู้เล่นทั้งหมด", value=player_list or "ไม่มีผู้เล่น", inline=False)
-            embed.set_footer(text="ข้อมูลจะอัปเดตทุก 40 วินาที")
             view = PlayerDropdown()
+            embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
             await main_message.edit(embed=embed, view=view)
-        await asyncio.sleep(40)
+        await asyncio.sleep(15)
 
 def start_flask():
     app.run(host="0.0.0.0", port=10000)
@@ -91,4 +86,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-    
+
