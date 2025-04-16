@@ -35,9 +35,8 @@ def fetch_data_from_github():
 # ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ GitHub
 def write_data_to_github(data):
     try:
-        # ใช้ GitHub API Token
         headers = {
-            "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ดึง GitHub Token จาก environment variables
+            "Authorization": f"token {os.getenv('GITHUB_TOKEN')}",  # ใส่ GitHub Token ของคุณ
             "Content-Type": "application/json"
         }
         payload = {
@@ -47,7 +46,7 @@ def write_data_to_github(data):
 
         api_url = "https://api.github.com/repos/dogkunnn/roblox/contents/players_data.json"
         response = requests.put(api_url, headers=headers, json=payload)
-        
+
         if response.status_code == 200:
             print("Data successfully written to GitHub.")
         else:
@@ -56,6 +55,7 @@ def write_data_to_github(data):
         print("Error writing data to GitHub:", e)
 
 player_data = fetch_data_from_github()  # โหลดข้อมูลจาก GitHub เมื่อเริ่มรัน
+main_message = None  # กำหนดค่าเริ่มต้นให้กับ main_message
 
 @app.route('/')
 def home():
@@ -114,7 +114,7 @@ async def send_main_message():
     global main_message
     await bot.wait_until_ready()
     channel = bot.get_channel(CHANNEL_ID)
-    
+
     if main_message is None:
         embed = discord.Embed(title="ข้อมูลผู้เล่น Roblox", description="เลือกชื่อเพื่อดูรายละเอียด", color=discord.Color.blue())
         view = PlayerDropdown()
@@ -134,4 +134,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-            
+        
