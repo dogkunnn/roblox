@@ -1,31 +1,33 @@
 import os
 import threading
 import asyncio
-from flask import Flask, request
+from flask import Flask, request, jsonify
 import discord
 
-# สร้าง Flask app
 app = Flask(__name__)
-
-# ดึง Discord Token จาก Environment Variable
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-CHANNEL_ID = 1362080053583937716  # ใส่ channel ID ที่คุณต้องการให้บอทส่งข้อความ
+CHANNEL_ID = 1362080053583937716
 
-# สร้าง Discord Bot
 intents = discord.Intents.default()
 bot = discord.Client(intents=intents)
 
 latest_data = None
+data_log = []  # สำหรับเก็บ log ล่าสุดหลายรายการ (จะโชว์หน้าเว็บ)
 
 @app.route('/')
 def home():
-    return "Bot is running!"
+    return jsonify({
+        "message": "Bot is running!",
+        "recent_data": data_log[-5:]  # แสดงล่าสุด 5 รายการ
+    })
 
 @app.route('/update', methods=['POST'])
 def update():
     global latest_data
     latest_data = request.json
-    return {"status": "ok"}
+    data_log.append(latest_data)
+    print("Data received from Roblox:", latest_data)
+    return {"status": "ok", "received": latest_data}
 
 async def send_loop():
     await bot.wait_until_ready()
@@ -41,7 +43,9 @@ async def send_loop():
                 f"**จำนวนผู้เล่นในเซิร์ฟเวอร์:** {latest_data['playerCount']}\n"
                 f"**ชื่อเซิร์ฟเวอร์:** {latest_data['serverName']}"
             )
+            print("Sending message to Discord...")
             await channel.send(msg)
+            print("Message sent.")
             last_sent = latest_data
         await asyncio.sleep(10)
 
@@ -52,3 +56,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_loop())
     bot.run(DISCORD_TOKEN)
+    
