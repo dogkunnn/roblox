@@ -5,8 +5,8 @@ import threading
 
 app = Flask(__name__)
 bot = discord.Bot(intents=discord.Intents.default())
-DISCORD_TOKEN = "YOUR_DISCORD_BOT_TOKEN"
-CHANNEL_ID = 123456789012345678  # ช่องที่จะส่งข้อความ
+DISCORD_TOKEN = "MTE0MDMyOTQxMzI4NDc0NTM5Mg.GbpOyx.ZgwW3pO0IuQAeKE0sa_H6a-iuEFArknqviGRks"
+CHANNEL_ID = 1362080053583937716  # ช่องที่จะส่งข้อความ
 
 latest_data = None
 
