@@ -1,15 +1,25 @@
+import os
+import threading
+import asyncio
 from flask import Flask, request
 import discord
-import asyncio
-import threading
 
+# สร้าง Flask app
 app = Flask(__name__)
+
+# ดึง Discord Token จาก Environment Variable
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+CHANNEL_ID = 1362080053583937716  # ใส่ channel ID ที่คุณต้องการให้บอทส่งข้อความ
+
+# สร้าง Discord Bot
 intents = discord.Intents.default()
-client = discord.Client(intents=intents)
-DISCORD_TOKEN = "YOUR_DISCORD_TOKEN"
-CHANNEL_ID = 1362080053583937716  # เปลี่ยนเป็น channel id จริง
+bot = discord.Client(intents=intents)
 
 latest_data = None
+
+@app.route('/')
+def home():
+    return "Bot is running!"
 
 @app.route('/update', methods=['POST'])
 def update():
@@ -18,8 +28,8 @@ def update():
     return {"status": "ok"}
 
 async def send_loop():
-    await client.wait_until_ready()
-    channel = client.get_channel(CHANNEL_ID)
+    await bot.wait_until_ready()
+    channel = bot.get_channel(CHANNEL_ID)
     last_sent = None
 
     while True:
@@ -40,6 +50,5 @@ def start_flask():
 
 if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
-    client.loop.create_task(send_loop())
-    client.run(DISCORD_TOKEN)
-
+    bot.loop.create_task(send_loop())
+    bot.run(DISCORD_TOKEN)
