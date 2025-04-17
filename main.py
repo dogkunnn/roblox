@@ -95,10 +95,10 @@ class PlayerSelect(discord.ui.Select):
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
                 # ตรวจสอบว่า data เป็น dictionary ที่มีคีย์ 'cash', 'serverName', และ 'playerCount'
-                if isinstance(data, dict) and 'cash' in data and 'serverName' in data and 'playerCount' in data:
+                if isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
                     embed.add_field(
                         name=username, 
-                        value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['serverName']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playerCount']}",
+                        value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}",
                         inline=False
                     )
                 else:
@@ -110,11 +110,11 @@ class PlayerSelect(discord.ui.Select):
             await interaction.response.edit_message(embed=embed, view=self.view)
         else:
             data = player_data.get(selected_username)
-            if data and isinstance(data, dict) and 'cash' in data and 'serverName' in data and 'playerCount' in data:
+            if data and isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
                 embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.green())
                 embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
-                embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playerCount']), inline=False)
-                embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['serverName'], inline=False)
+                embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playercount']), inline=False)
+                embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['servername'], inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
             else:
                 embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.red())
