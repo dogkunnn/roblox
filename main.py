@@ -5,6 +5,7 @@ from flask import Flask, request, jsonify
 import discord
 from discord.ext import commands
 from supabase import create_client, Client
+import time
 
 # Flask App
 app = Flask(__name__)
@@ -38,7 +39,7 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            response = supabase.table("players").upsert(player).execute()
+            response = supabase.table("players").upsert(player, on_conflict=["username"]).execute()  # ใช้ on_conflict
             print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
             if response.data:
                 print(f"Updated data for {username}")
@@ -49,6 +50,9 @@ def write_data_to_supabase(data):
 
 player_data = fetch_data_from_supabase()  # โหลดข้อมูลจาก Supabase เมื่อเริ่มรัน
 main_message = None  # กำหนดค่าเริ่มต้นให้กับ main_message
+
+# กำหนดเวลาอัปเดตล่าสุด
+last_update_time = {username: time.time() for username in player_data.keys()}
 
 @app.route('/')
 def home():
@@ -63,6 +67,7 @@ def update():
     username = data.get("username")
     if username:
         player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
+        last_update_time[username] = time.time()  # อัปเดตเวลาล่าสุด
         print(f"Updated data for {username}: {data}")
         write_data_to_supabase(player_data)  # เขียนข้อมูลไปที่ Supabase หลังจากอัปเดต
     return {"status": "ok", "received": data}
@@ -81,8 +86,10 @@ class PlayerDropdown(discord.ui.View):
 class PlayerSelect(discord.ui.Select):
     def __init__(self):
         options = [
-            discord.SelectOption(label=username, description=f"ดูข้อมูลของ {username}")
-            for username in player_data
+            discord.SelectOption(
+                label=f"{i+1}: {username} {'🟢' if time.time() - last_update_time[username] <= 60 else '🔴'}", 
+                description=f"ดูข้อมูลของ {username}")
+            for i, username in enumerate(player_data)
         ]
         options.append(discord.SelectOption(label="ดูข้อมูลทั้งหมด", description="ดูข้อมูลของผู้เล่นทุกคน"))
         super().__init__(placeholder="เลือกชื่อผู้เล่น", options=options)
@@ -94,32 +101,45 @@ class PlayerSelect(discord.ui.Select):
         if selected_username == "ดูข้อมูลทั้งหมด":
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
+                status_icon = '🟢' if time.time() - last_update_time[username] <= 60 else '🔴'
                 # ตรวจสอบว่า data เป็น dictionary ที่มีคีย์ 'cash', 'serverName', และ 'playerCount'
                 if isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
                     embed.add_field(
-                        name=username, 
+                        name=f"{username} {status_icon}", 
                         value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}",
                         inline=False
                     )
                 else:
                     embed.add_field(
-                        name=username,
+                        name=f"{username} {status_icon}",
                         value="ข้อมูลไม่ครบถ้วน",
                         inline=False
                     )
             await interaction.response.edit_message(embed=embed, view=self.view)
         else:
             data = player_data.get(selected_username)
+            status_icon = '🟢' if time.time() - last_update_time[selected_username] <= 60 else '🔴'
             if data and isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
                 embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.green())
                 embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
                 embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playercount']), inline=False)
                 embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['servername'], inline=False)
+                embed.add_field(name="สถานะ", value=f"สถานะ: {status_icon}", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
             else:
                 embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.red())
                 embed.add_field(name="ข้อมูลไม่ครบถ้วน", value="ข้อมูลที่จำเป็นไม่ครบถ้วนหรือยังไม่ได้รับการอัปเดต", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
+
+# ฟังก์ชันตรวจสอบสถานะออนไลน์
+async def check_player_status():
+    while True:
+        for username in list(player_data.keys()):
+            if time.time() - last_update_time[username] > 60:  # ถ้าไม่มีการอัปเดตข้อมูลภายใน 1 นาที
+                player_data[username]['status'] = 'ออฟไลน์'  # อัพเดตสถานะเป็นออฟไลน์
+            else:
+                player_data[username]['status'] = 'ออนไลน์'  # หากอัปเดตแล้วถือว่าออนไลน์
+        await asyncio.sleep(60)  # ตรวจสอบทุกๆ 60 วินาที
 
 async def send_main_message():
     global main_message
@@ -144,5 +164,6 @@ def start_flask():
 if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
+    bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
-
+                        
