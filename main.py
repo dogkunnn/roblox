@@ -39,13 +39,20 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            # ใช้ upsert() แทน insert() เพื่ออัปเดตข้อมูลหรือเพิ่มข้อมูลใหม่
-            response = supabase.table("players").upsert(player, on_conflict=["username"]).execute()
-            print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
-            if response.status_code == 200:
-                print(f"Upserted data for {username}")
+            # ลบข้อมูลเก่าก่อนที่จะ insert ข้อมูลใหม่
+            response_delete = supabase.table("players").delete().eq("username", username).execute()
+            if response_delete.status_code == 200:
+                print(f"Deleted old data for {username}")
             else:
-                print(f"Failed to upsert data for {username}. Status code: {response.status_code}")
+                print(f"Failed to delete old data for {username}. Status code: {response_delete.status_code}")
+
+            # ใช้ insert() เพื่อเพิ่มข้อมูลใหม่แทนที่ข้อมูลเก่าที่ถูกลบ
+            response_insert = supabase.table("players").insert(player).execute()
+            print("Supabase response:", response_insert)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
+            if response_insert.status_code == 200:
+                print(f"Inserted new data for {username}")
+            else:
+                print(f"Failed to insert new data for {username}. Status code: {response_insert.status_code}")
     except Exception as e:
         print("Error writing data to Supabase:", e)
 
@@ -164,3 +171,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
+ORD_TOKEN)
