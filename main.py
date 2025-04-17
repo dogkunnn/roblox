@@ -39,28 +39,35 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            # ตรวจสอบว่ามีข้อมูลที่เหมือนกันใน Supabase หรือไม่
-            existing_player = supabase.table("players").select("*").eq("username", username).execute().data
-            if existing_player:
-                # ถ้ามีข้อมูลเก่าและเหมือนกันกับข้อมูลใหม่ไม่ต้องลบ
-                if existing_player[0] == player:
+            # ตรวจสอบว่าข้อมูลใน Supabase เหมือนกับที่ส่งมาจาก Roblox หรือไม่
+            existing_data = supabase.table("players").select("*").eq("username", username).execute()
+            if existing_data.data:
+                existing_player = existing_data.data[0]
+                # ถ้าข้อมูลเหมือนเดิมไม่ต้องทำการลบและเพิ่ม
+                if (existing_player['servername'] == player['servername'] and
+                    existing_player['cash'] == player['cash'] and
+                    existing_player['playercount'] == player['playercount']):
                     print(f"No changes for {username}, skipping update.")
-                    continue
+                    continue  # ข้ามการอัปเดตข้อมูล
                 else:
-                    # ลบข้อมูลเก่าก่อนที่จะเพิ่มข้อมูลใหม่
-                    response_delete = supabase.table("players").delete().eq("username", username).execute()
-                    if response_delete.status_code == 200:
-                        print(f"Deleted old data for {username}")
-                    else:
-                        print(f"Failed to delete old data for {username}. Status code: {response_delete.status_code}")
+                    # ถ้ามีการเปลี่ยนแปลงให้ลบข้อมูลเก่าและเพิ่มข้อมูลใหม่
+                    def delete_old_data():
+                        response_delete = supabase.table("players").delete().eq("username", username).execute()
+                        if response_delete.status_code == 200:
+                            print(f"Deleted old data for {username}")
+                        else:
+                            print(f"Failed to delete old data for {username}. Status code: {response_delete.status_code}")
+
+                    # ดีเลย์การลบข้อมูลเก่าก่อนที่จะ insert ข้อมูลใหม่
+                    threading.Timer(120, delete_old_data).start()
 
             # เพิ่มข้อมูลใหม่
-            response_insert = supabase.table("players").insert(player).execute()
+            response_insert = supabase.table("players").upsert(player).execute()
             print("Supabase response:", response_insert)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
             if response_insert.status_code == 200:
-                print(f"Inserted new data for {username}")
+                print(f"Inserted/Updated data for {username}")
             else:
-                print(f"Failed to insert new data for {username}. Status code: {response_insert.status_code}")
+                print(f"Failed to insert/update data for {username}. Status code: {response_insert.status_code}")
     except Exception as e:
         print("Error writing data to Supabase:", e)
 
@@ -179,4 +186,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
-                         
+    
