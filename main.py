@@ -9,7 +9,7 @@ from supabase import create_client, Client
 # Flask App
 app = Flask(__name__)
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")  # Make sure there is no extra parenthesis here
 CHANNEL_ID = 1362080053583937716
 
 # Supabase Setup
@@ -145,4 +145,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-                
+
