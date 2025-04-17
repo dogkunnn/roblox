@@ -1,8 +1,6 @@
 import os
 import threading
 import asyncio
-import json
-import requests
 from flask import Flask, request, jsonify
 import discord
 from discord.ext import commands
@@ -25,10 +23,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
 def fetch_data_from_supabase():
     try:
-        # ดึงข้อมูลจาก Supabase
         response = supabase.table("players").select("*").execute()
-        
-        # เช็คว่ามีข้อมูลใน response
+        print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
         if response.data:
             return {player['username']: player for player in response.data}
         else:
@@ -41,13 +37,13 @@ def fetch_data_from_supabase():
 # ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ Supabase
 def write_data_to_supabase(data):
     try:
-        # ใช้ upsert เพื่ออัปเดตข้อมูลใน Supabase
         for username, player in data.items():
             response = supabase.table("players").upsert(player).execute()
+            print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
             if response.data:
                 print(f"Updated data for {username}")
             else:
-                print(f"Failed to update data for {username}. Status: {response.status_code}")
+                print(f"Failed to update data for {username}. Status code: {response.status_code}")
     except Exception as e:
         print("Error writing data to Supabase:", e)
 
@@ -149,4 +145,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-                        
+    
