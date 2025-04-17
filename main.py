@@ -97,37 +97,32 @@ class PlayerSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         selected_username = self.values[0]
         
+        # Strip the status icon (🟢 or 🔴) from the selected username
+        clean_username = selected_username.split(' ')[0]  # Get the part before the status icon
+        
         # ตรวจสอบว่าเลือก "ดูข้อมูลทั้งหมด" หรือไม่
-        if selected_username == "ดูข้อมูลทั้งหมด":
+        if clean_username == "ดูข้อมูลทั้งหมด":
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
                 status_icon = '🟢' if time.time() - last_update_time[username] <= 60 else '🔴'
-                # ตรวจสอบว่า data เป็น dictionary ที่มีคีย์ 'cash', 'serverName', และ 'playerCount'
-                if isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
-                    embed.add_field(
-                        name=f"{username} {status_icon}", 
-                        value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}",
-                        inline=False
-                    )
-                else:
-                    embed.add_field(
-                        name=f"{username} {status_icon}",
-                        value="ข้อมูลไม่ครบถ้วน",
-                        inline=False
-                    )
+                embed.add_field(
+                    name=f"{username} {status_icon}", 
+                    value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}",
+                    inline=False
+                )
             await interaction.response.edit_message(embed=embed, view=self.view)
         else:
-            data = player_data.get(selected_username)
-            status_icon = '🟢' if time.time() - last_update_time[selected_username] <= 60 else '🔴'
+            data = player_data.get(clean_username)
+            status_icon = '🟢' if time.time() - last_update_time[clean_username] <= 60 else '🔴'
             if data and isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
-                embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.green())
+                embed = discord.Embed(title=f"ข้อมูลของ {clean_username}", color=discord.Color.green())
                 embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
                 embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playercount']), inline=False)
                 embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['servername'], inline=False)
                 embed.add_field(name="สถานะ", value=f"สถานะ: {status_icon}", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
             else:
-                embed = discord.Embed(title=f"ข้อมูลของ {selected_username}", color=discord.Color.red())
+                embed = discord.Embed(title=f"ข้อมูลของ {clean_username}", color=discord.Color.red())
                 embed.add_field(name="ข้อมูลไม่ครบถ้วน", value="ข้อมูลที่จำเป็นไม่ครบถ้วนหรือยังไม่ได้รับการอัปเดต", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
 
@@ -166,4 +161,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
-            
+
