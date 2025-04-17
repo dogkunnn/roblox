@@ -39,18 +39,22 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            # ใช้ดีเลย์ 2 นาทีในการลบข้อมูลเก่า
-            def delete_old_data():
-                response_delete = supabase.table("players").delete().eq("username", username).execute()
-                if response_delete.status_code == 200:
-                    print(f"Deleted old data for {username}")
+            # ตรวจสอบว่ามีข้อมูลที่เหมือนกันใน Supabase หรือไม่
+            existing_player = supabase.table("players").select("*").eq("username", username).execute().data
+            if existing_player:
+                # ถ้ามีข้อมูลเก่าและเหมือนกันกับข้อมูลใหม่ไม่ต้องลบ
+                if existing_player[0] == player:
+                    print(f"No changes for {username}, skipping update.")
+                    continue
                 else:
-                    print(f"Failed to delete old data for {username}. Status code: {response_delete.status_code}")
+                    # ลบข้อมูลเก่าก่อนที่จะเพิ่มข้อมูลใหม่
+                    response_delete = supabase.table("players").delete().eq("username", username).execute()
+                    if response_delete.status_code == 200:
+                        print(f"Deleted old data for {username}")
+                    else:
+                        print(f"Failed to delete old data for {username}. Status code: {response_delete.status_code}")
 
-            # ดีเลย์การลบข้อมูลเก่าก่อนที่จะ insert ข้อมูลใหม่
-            threading.Timer(120, delete_old_data).start()
-
-            # ใช้ insert() เพื่อเพิ่มข้อมูลใหม่
+            # เพิ่มข้อมูลใหม่
             response_insert = supabase.table("players").insert(player).execute()
             print("Supabase response:", response_insert)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
             if response_insert.status_code == 200:
@@ -175,4 +179,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
-        
+                         
