@@ -1,5 +1,3 @@
-D_TOKEN)
-
 import os
 import threading
 import asyncio
