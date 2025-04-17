@@ -77,7 +77,7 @@ def update():
         player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
         last_update_time[username] = time.time()  # อัปเดตเวลาล่าสุด
         print(f"Updated data for {username}: {data}")
-        write_data_to_supabase(player_data)  # เขียนข้อมูลไปที่ Supabase หลังจากอัปเดต
+        write_data_to_supabase({username: data})  # เขียนข้อมูลไปที่ Supabase หลังจากอัปเดต
     return {"status": "ok", "received": data}
 
 # Discord UI Dropdown
@@ -171,3 +171,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
+
