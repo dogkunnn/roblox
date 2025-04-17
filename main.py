@@ -166,4 +166,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
-                        
+            
