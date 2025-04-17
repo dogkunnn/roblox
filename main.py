@@ -9,7 +9,7 @@ from supabase import create_client, Client
 # Flask App
 app = Flask(__name__)
 
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")  # Make sure there is no extra parenthesis here
 CHANNEL_ID = 1362080053583937716
 
 # Supabase Setup
@@ -20,35 +20,33 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
+# Fetch data from Supabase
 def fetch_data_from_supabase():
     try:
         response = supabase.table("players").select("*").execute()
-        print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
         if response.data:
             return {player['username']: player for player in response.data}
         else:
-            print(f"Error fetching data from Supabase: No data found")
+            print(f"Error fetching data from Supabase: {response}")
             return {}
     except Exception as e:
         print("Error fetching data from Supabase:", e)
         return {}
 
-# ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ Supabase
+# Write data to Supabase
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
             response = supabase.table("players").upsert(player).execute()
-            print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
-            if response.data:
+            if response.status_code == 200:
                 print(f"Updated data for {username}")
             else:
                 print(f"Failed to update data for {username}. Status code: {response.status_code}")
     except Exception as e:
         print("Error writing data to Supabase:", e)
 
-player_data = fetch_data_from_supabase()  # โหลดข้อมูลจาก Supabase เมื่อเริ่มรัน
-main_message = None  # กำหนดค่าเริ่มต้นให้กับ main_message
+player_data = fetch_data_from_supabase()  # Load data from Supabase at the start
+main_message = None  # Initialize main message variable
 
 @app.route('/')
 def home():
@@ -62,9 +60,9 @@ def update():
     data = request.json
     username = data.get("username")
     if username:
-        player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
+        player_data[username] = data  # Replace existing player data
         print(f"Updated data for {username}: {data}")
-        write_data_to_supabase(player_data)  # เขียนข้อมูลไปที่ Supabase หลังจากอัปเดต
+        write_data_to_supabase(player_data)  # Write data to Supabase after update
     return {"status": "ok", "received": data}
 
 # Discord UI Dropdown
@@ -89,12 +87,12 @@ class PlayerSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_username = self.values[0]
-        
-        # ตรวจสอบว่าเลือก "ดูข้อมูลทั้งหมด" หรือไม่
+
+        # Check if "ดูข้อมูลทั้งหมด" was selected
         if selected_username == "ดูข้อมูลทั้งหมด":
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
-                # ตรวจสอบว่า data เป็น dictionary ที่มีคีย์ 'cash', 'serverName', และ 'playerCount'
+                # Ensure that data contains necessary keys
                 if isinstance(data, dict) and 'cash' in data and 'serverName' in data and 'playerCount' in data:
                     embed.add_field(
                         name=username, 
@@ -121,6 +119,7 @@ class PlayerSelect(discord.ui.Select):
                 embed.add_field(name="ข้อมูลไม่ครบถ้วน", value="ข้อมูลที่จำเป็นไม่ครบถ้วนหรือยังไม่ได้รับการอัปเดต", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
 
+# Send main message and update periodically
 async def send_main_message():
     global main_message
     await bot.wait_until_ready()
@@ -138,6 +137,7 @@ async def send_main_message():
             await main_message.edit(embed=embed, view=view)
         await asyncio.sleep(20)
 
+# Start Flask server
 def start_flask():
     app.run(host="0.0.0.0", port=10000)
 
@@ -145,4 +145,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-    
+
