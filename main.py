@@ -23,7 +23,8 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
 def fetch_data_from_supabase():
     try:
-        response = supabase.table("players").select("*").execute()
+        # ใช้ .from('players').select('*') แทน
+        response = supabase.from('players').select('*').execute()
         print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
         if response.data:
             return {player['username']: player for player in response.data}
@@ -38,7 +39,8 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            response = supabase.table("players").upsert(player).execute()
+            # ใช้ upsert แทนการใช้ query
+            response = supabase.from('players').upsert(player).execute()
             print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
             if response.data:
                 print(f"Updated data for {username}")
@@ -142,20 +144,22 @@ def start_flask():
     app.run(host="0.0.0.0", port=10000)
 
 def create_supabase_table():
-    query = """
-    CREATE TABLE IF NOT EXISTS players (
-        id SERIAL PRIMARY KEY,
-        username TEXT UNIQUE NOT NULL,
-        cash INT,
-        playerCount INT,
-        serverName TEXT
-    );
-    """
-    supabase.query(query).execute()
+    try:
+        # ตรวจสอบการสร้างตารางใน Supabase
+        response = supabase.from('players').select('*').execute()
+        if not response.data:
+            # แทรกข้อมูลตัวอย่างหากไม่มีข้อมูล
+            data = [
+                {"username": "examplePlayer", "cash": 1000, "playerCount": 10, "serverName": "SERVER : 01"}
+            ]
+            supabase.from('players').upsert(data).execute()
+            print("Table created and sample data inserted.")
+    except Exception as e:
+        print("Error creating table:", e)
 
 if __name__ == '__main__':
     create_supabase_table()  # สร้างตารางใน Supabase
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-
+                
