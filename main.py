@@ -39,9 +39,10 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            response = supabase.table("players").upsert(player, on_conflict=["username"]).execute()  # ใช้ on_conflict
+            # ตรวจสอบว่า Supabase รับข้อมูลหรือไม่
+            response = supabase.table("players").upsert(player, on_conflict=["username"]).execute()
             print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
-            if response.data:
+            if response.status_code == 200:
                 print(f"Updated data for {username}")
             else:
                 print(f"Failed to update data for {username}. Status code: {response.status_code}")
@@ -163,4 +164,4 @@ if __name__ == '__main__':
     bot.loop.create_task(send_main_message())
     bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
     bot.run(DISCORD_TOKEN)
-
+    
