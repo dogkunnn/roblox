@@ -97,11 +97,8 @@ class PlayerSelect(discord.ui.Select):
     async def callback(self, interaction: discord.Interaction):
         selected_username = self.values[0]
         
-        # Strip the status icon (🟢 or 🔴) from the selected username
-        clean_username = selected_username.split(' ')[1]  # Get the username part after the number and status icon
-        
         # ตรวจสอบว่าเลือก "ดูข้อมูลทั้งหมด" หรือไม่
-        if clean_username == "ดูข้อมูลทั้งหมด":
+        if selected_username == "ดูข้อมูลทั้งหมด":
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
                 status_icon = '🟢' if time.time() - last_update_time[username] <= 60 else '🔴'
@@ -112,6 +109,8 @@ class PlayerSelect(discord.ui.Select):
                 )
             await interaction.response.edit_message(embed=embed, view=self.view)
         else:
+            # แยกชื่อผู้เล่นจากข้อความ
+            clean_username = selected_username.split(' ')[1]  # Get the username part after the number and status icon
             data = player_data.get(clean_username)
             status_icon = '🟢' if time.time() - last_update_time[clean_username] <= 60 else '🔴'
             if data and isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
