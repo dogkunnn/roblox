@@ -141,8 +141,21 @@ async def send_main_message():
 def start_flask():
     app.run(host="0.0.0.0", port=10000)
 
+def create_supabase_table():
+    query = """
+    CREATE TABLE IF NOT EXISTS players (
+        id SERIAL PRIMARY KEY,
+        username TEXT UNIQUE NOT NULL,
+        cash INT,
+        playerCount INT,
+        serverName TEXT
+    );
+    """
+    supabase.query(query).execute()
+
 if __name__ == '__main__':
+    create_supabase_table()  # สร้างตารางใน Supabase
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-                                                                       
+
