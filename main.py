@@ -25,11 +25,14 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
 def fetch_data_from_supabase():
     try:
+        # ดึงข้อมูลจาก Supabase
         response = supabase.table("players").select("*").execute()
-        if response.status_code == 200:
+        
+        # เช็คว่ามีข้อมูลใน response
+        if response.data:
             return {player['username']: player for player in response.data}
         else:
-            print(f"Error fetching data from Supabase: {response}")
+            print(f"Error fetching data from Supabase: No data found")
             return {}
     except Exception as e:
         print("Error fetching data from Supabase:", e)
@@ -38,16 +41,13 @@ def fetch_data_from_supabase():
 # ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ Supabase
 def write_data_to_supabase(data):
     try:
+        # ใช้ upsert เพื่ออัปเดตข้อมูลใน Supabase
         for username, player in data.items():
-            # ตรวจสอบและแปลงข้อมูล cash ให้เป็น integer ถ้าเป็น string
-            if isinstance(player['cash'], str):
-                player['cash'] = int(player['cash'])
-
-            response = supabase.table("players").upsert(player, on_conflict=["username"]).execute()
-            if response.status_code == 200:
-                print(f"Updated or inserted data for {username}")
+            response = supabase.table("players").upsert(player).execute()
+            if response.data:
+                print(f"Updated data for {username}")
             else:
-                print(f"Failed to update data for {username}. Status code: {response.status_code}")
+                print(f"Failed to update data for {username}. Status: {response.status_code}")
     except Exception as e:
         print("Error writing data to Supabase:", e)
 
@@ -149,4 +149,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-
+                        
