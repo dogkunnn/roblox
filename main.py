@@ -98,7 +98,7 @@ class PlayerSelect(discord.ui.Select):
         selected_username = self.values[0]
         
         # Strip the status icon (🟢 or 🔴) from the selected username
-        clean_username = selected_username.split(' ')[0]  # Get the part before the status icon
+        clean_username = selected_username.split(' ')[1]  # Get the username part after the number and status icon
         
         # ตรวจสอบว่าเลือก "ดูข้อมูลทั้งหมด" หรือไม่
         if clean_username == "ดูข้อมูลทั้งหมด":
