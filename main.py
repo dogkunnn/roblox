@@ -23,7 +23,7 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 # ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
 def fetch_data_from_supabase():
     try:
-        # ใช้ .from('players').select('*') แทน
+        # Correct usage of supabase.from().select() to fetch data
         response = supabase.from('players').select('*').execute()
         print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
         if response.data:
@@ -39,7 +39,7 @@ def fetch_data_from_supabase():
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            # ใช้ upsert แทนการใช้ query
+            # Use upsert to insert or update the data
             response = supabase.from('players').upsert(player).execute()
             print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
             if response.data:
@@ -162,4 +162,4 @@ if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
     bot.run(DISCORD_TOKEN)
-                
+    
