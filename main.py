@@ -102,9 +102,10 @@ class PlayerSelect(discord.ui.Select):
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
                 status_icon = '🟢' if time.time() - last_update_time[username] <= 60 else '🔴'
+                time_diff = int((time.time() - last_update_time[username]) / 60)  # คำนวณนาทีที่แล้ว
                 embed.add_field(
                     name=f"{username} {status_icon}", 
-                    value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}",
+                    value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}\nอัพเดทล่าสุด: {time_diff} นาทีที่แล้ว",
                     inline=False
                 )
             await interaction.response.edit_message(embed=embed, view=self.view)
@@ -113,12 +114,14 @@ class PlayerSelect(discord.ui.Select):
             clean_username = selected_username.split(' ')[1]  # Get the username part after the number and status icon
             data = player_data.get(clean_username)
             status_icon = '🟢' if time.time() - last_update_time[clean_username] <= 60 else '🔴'
+            time_diff = int((time.time() - last_update_time[clean_username]) / 60)  # คำนวณนาทีที่แล้ว
             if data and isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
                 embed = discord.Embed(title=f"ข้อมูลของ {clean_username}", color=discord.Color.green())
                 embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
                 embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playercount']), inline=False)
                 embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['servername'], inline=False)
                 embed.add_field(name="สถานะ", value=f"สถานะ: {status_icon}", inline=False)
+                embed.add_field(name="อัพเดทล่าสุด", value=f"{time_diff} นาทีที่แล้ว", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
             else:
                 embed = discord.Embed(title=f"ข้อมูลของ {clean_username}", color=discord.Color.red())
