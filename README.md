@@ -14,4 +14,5 @@ CREATE TABLE IF NOT EXISTS public.players (
 [supabase](https://supabase.com)  |  [render](https://render.com)
 ### Environment
 ```SUPABASE_API_KEY```
+
 ```DISCORD_TOKEN```
