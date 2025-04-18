@@ -10,5 +10,5 @@ CREATE TABLE IF NOT EXISTS public.players (
   status text
 );
 ```
-### Link
+-### Link
 #### [supabase](https://supabase.com)  |  [render](https://render.com)
