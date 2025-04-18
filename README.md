@@ -16,5 +16,6 @@ CREATE TABLE IF NOT EXISTS public.players (
 ```SUPABASE_API_KEY```
 
 ```DISCORD_TOKEN```
-### get api supabase
-API Docs > API settings
+### get api 
+API Docs>API settings
+https://youname.onrender.com
