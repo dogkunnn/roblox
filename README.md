@@ -11,4 +11,5 @@ CREATE TABLE IF NOT EXISTS public.players (
 );
 ```
 ### Link
-[get api](https://supabase.com)
+#### [supabase](https://supabase.com)
+#### [render](https://render.com)
