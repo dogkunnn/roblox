@@ -1,5 +1,5 @@
 # setup
-<h2>db</h2>
+### db
 
 ```js
 CREATE TABLE IF NOT EXISTS public.players (
@@ -10,5 +10,4 @@ CREATE TABLE IF NOT EXISTS public.players (
   status text
 );
 ```
-<h4>link</h4>
-<a href="https://supabase.com">supabase </a>
+[supabase](https://supabase.com)get api
