@@ -11,4 +11,4 @@ CREATE TABLE IF NOT EXISTS public.players (
 );
 ```
 <h4>link</h4>
-<a> href="https://supabase.com">supabase< </a>
+<a href="https://supabase.com">supabase< /a>
