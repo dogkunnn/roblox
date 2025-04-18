@@ -2,5 +2,11 @@
 <h2>db</h2>
 
 ```js
-https://supabase.com/dashboard/project/inlrteqmzgrnhzibkymh/database/schemas
+CREATE TABLE IF NOT EXISTS public.players (
+  username text PRIMARY KEY,
+  cash int4,
+  playercount int4,
+  servername text,
+  status text
+);
 ```
