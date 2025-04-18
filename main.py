@@ -21,60 +21,38 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_API_KEY)
 intents = discord.Intents.default()
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ฟังก์ชันเพื่อดึงข้อมูลจาก Supabase
+# Load from Supabase
 def fetch_data_from_supabase():
     try:
         response = supabase.table("players").select("*").execute()
-        print("Supabase response:", response)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
         if response.data:
             return {player['username']: player for player in response.data}
         else:
-            print(f"Error fetching data from Supabase: No data found")
             return {}
     except Exception as e:
         print("Error fetching data from Supabase:", e)
         return {}
 
-# ฟังก์ชันเพื่อเขียนข้อมูลกลับไปที่ Supabase
+# Write to Supabase (ลบทันทีถ้าข้อมูลไม่ตรง และเพิ่มข้อมูลใหม่)
 def write_data_to_supabase(data):
     try:
         for username, player in data.items():
-            # ตรวจสอบว่าข้อมูลใน Supabase เหมือนกับที่ส่งมาจาก Roblox หรือไม่
+            player.pop("status", None)
+
             existing_data = supabase.table("players").select("*").eq("username", username).execute()
             if existing_data.data:
                 existing_player = existing_data.data[0]
-                # ถ้าข้อมูลเหมือนเดิมไม่ต้องทำการลบและเพิ่ม
-                if (existing_player['servername'] == player['servername'] and
-                    existing_player['cash'] == player['cash'] and
-                    existing_player['playercount'] == player['playercount']):
-                    print(f"No changes for {username}, skipping update.")
-                    continue  # ข้ามการอัปเดตข้อมูล
-                else:
-                    # ถ้ามีการเปลี่ยนแปลงให้ลบข้อมูลเก่าและเพิ่มข้อมูลใหม่
-                    def delete_old_data():
-                        response_delete = supabase.table("players").delete().eq("username", username).execute()
-                        if response_delete.status_code == 200:
-                            print(f"Deleted old data for {username}")
-                        else:
-                            print(f"Failed to delete old data for {username}. Status code: {response_delete.status_code}")
+                if (existing_player['servername'] != player['servername'] or
+                    existing_player['cash'] != player['cash'] or
+                    existing_player['playercount'] != player['playercount']):
+                    supabase.table("players").delete().eq("username", username).execute()
 
-                    # ดีเลย์การลบข้อมูลเก่าก่อนที่จะ insert ข้อมูลใหม่
-                    threading.Timer(120, delete_old_data).start()
-
-            # เพิ่มข้อมูลใหม่
-            response_insert = supabase.table("players").upsert(player).execute()
-            print("Supabase response:", response_insert)  # ตรวจสอบข้อมูลที่ได้รับจาก Supabase
-            if response_insert.status_code == 200:
-                print(f"Inserted/Updated data for {username}")
-            else:
-                print(f"Failed to insert/update data for {username}. Status code: {response_insert.status_code}")
+            supabase.table("players").upsert(player).execute()
     except Exception as e:
         print("Error writing data to Supabase:", e)
 
-player_data = fetch_data_from_supabase()  # โหลดข้อมูลจาก Supabase เมื่อเริ่มรัน
-main_message = None  # กำหนดค่าเริ่มต้นให้กับ main_message
-
-# กำหนดเวลาอัปเดตล่าสุด
+player_data = fetch_data_from_supabase()
+main_message = None
 last_update_time = {username: time.time() for username in player_data.keys()}
 
 @app.route('/')
@@ -89,13 +67,13 @@ def update():
     data = request.json
     username = data.get("username")
     if username:
-        player_data[username] = data  # แทนที่ข้อมูลผู้เล่นเดิม
-        last_update_time[username] = time.time()  # อัปเดตเวลาล่าสุด
-        print(f"Updated data for {username}: {data}")
-        write_data_to_supabase({username: data})  # เขียนข้อมูลไปที่ Supabase หลังจากอัปเดต
+        data.pop("status", None)
+        player_data[username] = data
+        last_update_time[username] = time.time()
+        write_data_to_supabase({username: data})
     return {"status": "ok", "received": data}
 
-# Discord UI Dropdown
+# Discord Dropdown
 class PlayerDropdown(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -110,7 +88,7 @@ class PlayerSelect(discord.ui.Select):
     def __init__(self):
         options = [
             discord.SelectOption(
-                label=f"{i+1}: {username} {'🟢' if time.time() - last_update_time[username] <= 60 else '🔴'}", 
+                label=f"{i+1}: {username} {'🟢' if time.time() - last_update_time[username] <= 60 else '🔴'}",
                 description=f"ดูข้อมูลของ {username}")
             for i, username in enumerate(player_data)
         ]
@@ -119,31 +97,29 @@ class PlayerSelect(discord.ui.Select):
 
     async def callback(self, interaction: discord.Interaction):
         selected_username = self.values[0]
-        
-        # ตรวจสอบว่าเลือก "ดูข้อมูลทั้งหมด" หรือไม่
+
         if selected_username == "ดูข้อมูลทั้งหมด":
             embed = discord.Embed(title="ข้อมูลผู้เล่นทั้งหมด", color=discord.Color.blue())
             for username, data in player_data.items():
                 status_icon = '🟢' if time.time() - last_update_time[username] <= 60 else '🔴'
-                time_diff = int((time.time() - last_update_time[username]) / 60)  # คำนวณนาทีที่แล้ว
+                time_diff = int((time.time() - last_update_time[username]) / 60)
                 embed.add_field(
-                    name=f"{username} {status_icon}", 
+                    name=f"{username} {status_icon}",
                     value=f"จำนวนเงิน: {data['cash']}\nชื่อเซิร์ฟเวอร์: {data['servername']}\nจำนวนผู้เล่นในเซิร์ฟเวอร์: {data['playercount']}\nอัพเดทล่าสุด: {time_diff} นาทีที่แล้ว",
                     inline=False
                 )
             await interaction.response.edit_message(embed=embed, view=self.view)
         else:
-            # แยกชื่อผู้เล่นจากข้อความ
-            clean_username = selected_username.split(' ')[1]  # Get the username part after the number and status icon
+            clean_username = selected_username.split(' ')[1]
             data = player_data.get(clean_username)
             status_icon = '🟢' if time.time() - last_update_time[clean_username] <= 60 else '🔴'
-            time_diff = int((time.time() - last_update_time[clean_username]) / 60)  # คำนวณนาทีที่แล้ว
-            if data and isinstance(data, dict) and 'cash' in data and 'servername' in data and 'playercount' in data:
+            time_diff = int((time.time() - last_update_time[clean_username]) / 60)
+            if data and all(k in data for k in ['cash', 'servername', 'playercount']):
                 embed = discord.Embed(title=f"ข้อมูลของ {clean_username}", color=discord.Color.green())
                 embed.add_field(name="จำนวนเงิน", value=data['cash'], inline=False)
                 embed.add_field(name="จำนวนผู้เล่นในเซิร์ฟเวอร์", value=str(data['playercount']), inline=False)
                 embed.add_field(name="ชื่อเซิร์ฟเวอร์", value=data['servername'], inline=False)
-                embed.add_field(name="สถานะ", value=f"สถานะ: {status_icon}", inline=False)
+                embed.add_field(name="สถานะ", value=f"{status_icon}", inline=False)
                 embed.add_field(name="อัพเดทล่าสุด", value=f"{time_diff} นาทีที่แล้ว", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
             else:
@@ -151,16 +127,17 @@ class PlayerSelect(discord.ui.Select):
                 embed.add_field(name="ข้อมูลไม่ครบถ้วน", value="ข้อมูลที่จำเป็นไม่ครบถ้วนหรือยังไม่ได้รับการอัปเดต", inline=False)
                 await interaction.response.edit_message(embed=embed, view=self.view)
 
-# ฟังก์ชันตรวจสอบสถานะออนไลน์
+# ตรวจสอบสถานะออนไลน์
 async def check_player_status():
     while True:
         for username in list(player_data.keys()):
-            if time.time() - last_update_time[username] > 60:  # ถ้าไม่มีการอัปเดตข้อมูลภายใน 1 นาที
-                player_data[username]['status'] = 'ออฟไลน์'  # อัพเดตสถานะเป็นออฟไลน์
+            if time.time() - last_update_time[username] > 60:
+                player_data[username]['status'] = 'ออฟไลน์'
             else:
-                player_data[username]['status'] = 'ออนไลน์'  # หากอัปเดตแล้วถือว่าออนไลน์
-        await asyncio.sleep(60)  # ตรวจสอบทุกๆ 60 วินาที
+                player_data[username]['status'] = 'ออนไลน์'
+        await asyncio.sleep(60)
 
+# แสดงข้อความหลัก
 async def send_main_message():
     global main_message
     await bot.wait_until_ready()
@@ -178,12 +155,13 @@ async def send_main_message():
             await main_message.edit(embed=embed, view=view)
         await asyncio.sleep(20)
 
+# Start Flask + Bot
 def start_flask():
     app.run(host="0.0.0.0", port=10000)
 
 if __name__ == '__main__':
     threading.Thread(target=start_flask).start()
     bot.loop.create_task(send_main_message())
-    bot.loop.create_task(check_player_status())  # เริ่มฟังก์ชันตรวจสอบสถานะออนไลน์
+    bot.loop.create_task(check_player_status())
     bot.run(DISCORD_TOKEN)
-    
+
