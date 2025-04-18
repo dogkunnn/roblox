@@ -1,48 +1,82 @@
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
 
--- ตั้งค่าลิงก์ปลายทาง
+-- ตั้งค่า Endpoint ของ API
 local endpoint = "https://roblox-l5m8.onrender.com/update"
 
--- ฟังก์ชันดึงข้อมูลที่ต้องการส่ง
-local function getDataToSend(player)
-	local cash = player:FindFirstChild("leaderstats") and player.leaderstats:FindFirstChild("Cash")
-	local cashValue = cash and cash.Value or 0
-
-	local data = {
-		username = player.Name,
-		cash = cashValue,
-		playerCount = #game.Players:GetPlayers(),
-		serverName = game.JobId ~= "" and game.JobId or "Local Server"
-	}
-
-	return data
+-- ฟังก์ชันค้นหา Text อย่างปลอดภัย
+local function safeFindText(base, path)
+    local obj = base
+    for _, part in ipairs(path) do
+        obj = obj:FindFirstChild(part)
+        if not obj then return "Unknown" end
+    end
+    return obj.Text
 end
 
--- ส่งข้อมูลไปยัง Web API
-local function sendData(player)
-	local success, err = pcall(function()
-		local data = getDataToSend(player)
-		local jsonData = HttpService:JSONEncode(data)
-		HttpService:PostAsync(endpoint, jsonData, Enum.HttpContentType.ApplicationJson)
-	end)
+-- ฟังก์ชันดึงข้อมูลจาก GUI
+local function getData()
+    local gui = player:WaitForChild("PlayerGui")
 
-	if not success then
-		warn("Failed to send data to Discord Bot:", err)
-	end
+    -- ดึงจำนวนเงิน
+    local inventory = gui:WaitForChild("Inventory"):WaitForChild("CanvasGroup")
+    local amountLabel = inventory.Main.Body.Cash.Main.Amount
+    local cash = tonumber(amountLabel.Text) or 0
+
+    -- ดึงชื่อเซิร์ฟเวอร์อย่างปลอดภัย
+    local serverName = safeFindText(gui, {
+        "TopbarStandard", "Holders", "Left", "Widget",
+        "IconButton", "Menu", "IconSpot", "Contents",
+        "IconLabelContainer", "IconLabel"
+    })
+
+    -- ดึงจำนวนผู้เล่น และชื่อ
+    local playerCount = #Players:GetPlayers()
+    local username = player.Name
+
+    return {
+        username = username,
+        cash = cash,
+        playercount = playerCount,
+        servername = serverName
+    }
 end
 
--- ส่งเมื่อผู้เล่นเข้ามาใหม่
-game.Players.PlayerAdded:Connect(function(player)
-	-- รอให้ leaderstats โหลดก่อน
-	player.CharacterAdded:Wait()
-	wait(3)
-	sendData(player)
+-- ฟังก์ชันส่งข้อมูลไป API พร้อมระบบ retry
+local function sendData()
+    local data = getData()
+    local jsonData = HttpService:JSONEncode(data)
+
+    print("กำลังส่งข้อมูลไปยัง API:", jsonData)
+
+    local success, response = pcall(function()
+        request({
+            Url = endpoint,
+            Method = "POST",
+            Headers = {
+                ["Content-Type"] = "application/json"
+            },
+            Body = jsonData
+        })
+    end)
+
+    if success then
+        print("ส่งข้อมูลสำเร็จ")
+    else
+        warn("ส่งข้อมูลล้มเหลว:", response)
+        wait(2) -- รอ 2 วิ แล้วลองใหม่
+        sendData()
+    end
+end
+
+-- เริ่มส่งข้อมูลอัตโนมัติ
+task.spawn(function()
+    wait(1) -- รอ GUI โหลด
+    sendData()
+
+    while true do
+        wait(1)
+        sendData()
+    end
 end)
-
--- ส่งข้อมูลซ้ำทุก 60 วินาที
-while true do
-	wait(60)
-	for _, player in pairs(game.Players:GetPlayers()) do
-		sendData(player)
-	end
-end
