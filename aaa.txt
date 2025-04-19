@@ -5,14 +5,33 @@ local player = Players.LocalPlayer
 -- ตั้งค่า Endpoint ของ API
 local endpoint = "https://roblox-l5m8.onrender.com/update"
 
--- ฟังก์ชันค้นหา Text อย่างปลอดภัย
-local function safeFindText(base, path)
+-- ฟังก์ชันค้นหา Text อย่างปลอดภัย โดยรอโหลดสูงสุด 90 วินาที
+local function safeFindText(base, path, maxWaitTime)
+	maxWaitTime = maxWaitTime or 90
+	local elapsed = 0
 	local obj = base
+
 	for _, part in ipairs(path) do
-		obj = obj:FindFirstChild(part)
-		if not obj then return "Unknown" end
+		local found = nil
+		repeat
+			found = obj:FindFirstChild(part)
+			if not found then
+				wait(1)
+				elapsed += 1
+			end
+		until found or elapsed >= maxWaitTime
+
+		if not found then
+			return "Unknown"
+		end
+		obj = found
 	end
-	return obj.Text
+
+	if obj:IsA("TextLabel") or obj:IsA("TextBox") or obj:IsA("TextButton") then
+		return obj.Text
+	end
+
+	return "Unknown"
 end
 
 -- ฟังก์ชันดึงข้อมูลจาก GUI
@@ -24,12 +43,12 @@ local function getData()
 	local amountLabel = inventory.Main.Body.Cash.Main.Amount
 	local cash = tonumber(amountLabel.Text) or 0
 
-	-- ดึงชื่อเซิร์ฟเวอร์อย่างปลอดภัย
+	-- ดึงชื่อเซิร์ฟเวอร์
 	local serverName = safeFindText(gui, {
 		"TopbarStandard", "Holders", "Left", "Widget",
 		"IconButton", "Menu", "IconSpot", "Contents",
 		"IconLabelContainer", "IconLabel"
-	})
+	}, 90)
 
 	-- ดึงจำนวนผู้เล่น และชื่อ
 	local playerCount = #Players:GetPlayers()
@@ -70,24 +89,9 @@ local function sendData()
 	end
 end
 
--- เริ่มส่งข้อมูลอัตโนมัติหลังจาก servername โหลดเสร็จ
+-- เริ่มส่งข้อมูลอัตโนมัติ
 task.spawn(function()
-	local gui = player:WaitForChild("PlayerGui")
-
-	repeat
-		wait(1)
-	until gui
-		:FindFirstChild("TopbarStandard")
-		and gui.TopbarStandard:FindFirstChild("Holders")
-		and gui.TopbarStandard.Holders:FindFirstChild("Left")
-		and gui.TopbarStandard.Holders.Left:FindFirstChild("Widget")
-		and gui.TopbarStandard.Holders.Left.Widget:FindFirstChild("IconButton")
-		and gui.TopbarStandard.Holders.Left.Widget.IconButton:FindFirstChild("Menu")
-		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu:FindFirstChild("IconSpot")
-		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu.IconSpot:FindFirstChild("Contents")
-		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu.IconSpot.Contents:FindFirstChild("IconLabelContainer")
-		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu.IconSpot.Contents.IconLabelContainer:FindFirstChild("IconLabel")
-
+	wait(1) -- รอ GUI อื่นๆ โหลด
 	sendData()
 
 	while true do
