@@ -3,6 +3,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Network = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("NetworkFramework"))
 
+-- สุ่มตำแหน่งให้กระจาย
+math.randomseed(tick())
+math.random(); math.random(); math.random()
+
 local function fireRemote(action, item, amount)
     local args = { [1] = "fire", [3] = action, [4] = item, [5] = amount }
     local event = ReplicatedStorage:WaitForChild("Modules"):WaitForChild("NetworkFramework"):WaitForChild("NetworkEvent")
@@ -68,10 +72,10 @@ local function startFishing()
 end
 
 local fishingSpots = {
-    Vector3.new(2725.91, 9.31, 1648.08),
-    Vector3.new(2792.46, 9.26, 1656.58),
-    Vector3.new(2828.59, 12.53, 1654.23),
-    Vector3.new(2854.12, 10.53, 1651.90)
+    Vector3.new(2853.37, 7.79, 1645.72),
+    Vector3.new(2811.62, 7.62, 1653.06),
+    Vector3.new(2799.40, 8.32, 1652.79),
+    Vector3.new(2784.24, 7.54, 1654.20)
 }
 
 local function getRandomFishingSpot()
@@ -84,6 +88,8 @@ local function startFishingAtRandomSpot()
     startFishing()
 end
 
+walkTo(Vector3.new(2824.22, 14.06, 1714.09))
+task.wait(1)
 startFishingAtRandomSpot()
 
 local lastDisplayTime = 0
@@ -158,6 +164,7 @@ while true do
         walkTo(Vector3.new(3028.79, 14.41, 1910.04))
         walkTo(Vector3.new(3019.00, 14.14, 1936.90))
         walkTo(Vector3.new(2775.78, 14.14, 1862.23))
+        walkTo(Vector3.new(2749.80, 14.14, 1798.53))
 
         startFishingAtRandomSpot()
     end
