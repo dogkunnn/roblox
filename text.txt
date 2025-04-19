@@ -3,7 +3,6 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Network = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("NetworkFramework"))
 
--- สุ่มตำแหน่งให้กระจาย
 math.randomseed(tick())
 math.random(); math.random(); math.random()
 
@@ -16,6 +15,21 @@ local function fireRemote(action, item, amount)
     end
 end
 
+local function noclipCharacter()
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local lowerName = part.Name:lower()
+                local isGround = lowerName:find("ground") or lowerName:find("floor") or part.Position.Y < 5
+                if not isGround then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+end
+
 local function walkTo(pos)
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local human = character:WaitForChild("Humanoid")
@@ -24,6 +38,7 @@ local function walkTo(pos)
     human.WalkSpeed = 30
     human:MoveTo(pos)
     while (root.Position - pos).Magnitude > 4 do
+        noclipCharacter()
         human:MoveTo(pos)
         task.wait(0.2)
     end
@@ -50,7 +65,6 @@ local fishList = {
 }
 
 local baitPath = { "Inventory", "CanvasGroup", "Main", "Body", "Bait", "Main", "Amount" }
-
 local playerGui = LocalPlayer:WaitForChild("PlayerGui")
 local statusGui = playerGui:WaitForChild("Status"):WaitForChild("Main"):WaitForChild("Status")
 
@@ -88,6 +102,26 @@ local function startFishingAtRandomSpot()
     startFishing()
 end
 
+local function restockItems()
+    walkTo(Vector3.new(2771.72, 14.14, 1840.51)) -- ป้ายวาร์ป
+    walkTo(Vector3.new(2900.54, 14.14, 1921.17))
+    walkTo(Vector3.new(3017.66, 14.14, 1936.27))
+    walkTo(Vector3.new(3025.93, 14.41, 1912.14))
+    walkTo(Vector3.new(3044.65, 14.41, 1912.99))
+
+    fireRemote("Supermarket", "Bait", 150)
+    fireRemote("Supermarket", "Water", 15)
+    fireRemote("Supermarket", "Bread", 15)
+
+    task.wait(4) -- รอ 4 วิหลังซื้อ
+
+    walkTo(Vector3.new(3028.79, 14.41, 1910.04))
+    walkTo(Vector3.new(3019.00, 14.14, 1936.90))
+    walkTo(Vector3.new(2775.78, 14.14, 1862.23))
+    walkTo(Vector3.new(2749.80, 14.14, 1798.53))
+end
+
+-- เริ่ม
 walkTo(Vector3.new(2824.22, 14.06, 1714.09))
 task.wait(1)
 startFishingAtRandomSpot()
@@ -110,6 +144,7 @@ while true do
     if hunger < 0.2 then fireRemote("Use Item", "Bread", 1) end
     if thirst < 0.2 then fireRemote("Use Item", "Water", 1) end
 
+    -- Show inventory every 10s
     if tick() - lastDisplayTime >= 10 then
         print("=== Fish Inventory ===")
         for name, path in pairs(fishList) do
@@ -123,6 +158,7 @@ while true do
         lastDisplayTime = tick()
     end
 
+    -- Check if any fish inventory is full
     local full = false
     for _, path in pairs(fishList) do
         local obj = findPath(path)
@@ -145,27 +181,18 @@ while true do
                 task.wait(0.1)
             end
         end
+        task.wait(4) -- รอ 4 วิหลังขาย
         startFishingAtRandomSpot()
     end
 
+    -- Check bait
     local baitObj = findPath(baitPath)
     local bait, baitMax = getAmountFromText(baitObj)
-    if bait and bait <= 4 then
-        walkTo(Vector3.new(2771.72, 14.14, 1840.51))
-        walkTo(Vector3.new(2900.54, 14.14, 1921.17))
-        walkTo(Vector3.new(3017.66, 14.14, 1936.27))
-        walkTo(Vector3.new(3025.93, 14.41, 1912.14))
-        walkTo(Vector3.new(3044.65, 14.41, 1912.99))
 
-        fireRemote("Supermarket", "Bait", 150)
-        fireRemote("Supermarket", "Water", 15)
-        fireRemote("Supermarket", "Bread", 15)
-
-        walkTo(Vector3.new(3028.79, 14.41, 1910.04))
-        walkTo(Vector3.new(3019.00, 14.14, 1936.90))
-        walkTo(Vector3.new(2775.78, 14.14, 1862.23))
-        walkTo(Vector3.new(2749.80, 14.14, 1798.53))
-
+    if (not bait or bait <= 4) then
+        print("Bait not found or low. Buying more...")
+        restockItems()
+        task.wait(4) -- รอ 4 วิก่อนกลับไปตกปลา
         startFishingAtRandomSpot()
     end
 end
