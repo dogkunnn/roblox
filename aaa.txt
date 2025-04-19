@@ -1,11 +1,10 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local TeleportService = game:GetService("TeleportService")
 local player = Players.LocalPlayer
 
--- ตั้งค่า Endpoint ของ API
 local endpoint = "https://roblox-l5m8.onrender.com/update"
 
--- ฟังก์ชันค้นหา Text อย่างปลอดภัย โดยรอโหลดสูงสุด 90 วินาที
 local function safeFindText(base, path, maxWaitTime)
 	maxWaitTime = maxWaitTime or 90
 	local elapsed = 0
@@ -34,23 +33,19 @@ local function safeFindText(base, path, maxWaitTime)
 	return "Unknown"
 end
 
--- ฟังก์ชันดึงข้อมูลจาก GUI
 local function getData()
 	local gui = player:WaitForChild("PlayerGui")
 
-	-- ดึงจำนวนเงิน
 	local inventory = gui:WaitForChild("Inventory"):WaitForChild("CanvasGroup")
 	local amountLabel = inventory.Main.Body.Cash.Main.Amount
 	local cash = tonumber(amountLabel.Text) or 0
 
-	-- ดึงชื่อเซิร์ฟเวอร์
 	local serverName = safeFindText(gui, {
 		"TopbarStandard", "Holders", "Left", "Widget",
 		"IconButton", "Menu", "IconSpot", "Contents",
 		"IconLabelContainer", "IconLabel"
 	}, 90)
 
-	-- ดึงจำนวนผู้เล่น และชื่อ
 	local playerCount = #Players:GetPlayers()
 	local username = player.Name
 
@@ -62,11 +57,17 @@ local function getData()
 	}
 end
 
--- ฟังก์ชันส่งข้อมูลไป API พร้อมระบบ retry
 local function sendData()
 	local data = getData()
-	local jsonData = HttpService:JSONEncode(data)
 
+	-- ถ้ามีผู้เล่นมากกว่า 5 คน ให้รีจอยเซิร์ฟ
+	if data.playercount > 5 then
+		warn("พบผู้เล่นมากกว่า 5 คน กำลังรีจอยเซิร์ฟเวอร์ใหม่...")
+		TeleportService:Teleport(game.PlaceId, player)
+		return
+	end
+
+	local jsonData = HttpService:JSONEncode(data)
 	print("กำลังส่งข้อมูลไปยัง API:", jsonData)
 
 	local success, response = pcall(function()
@@ -89,9 +90,8 @@ local function sendData()
 	end
 end
 
--- เริ่มส่งข้อมูลอัตโนมัติ
 task.spawn(function()
-	wait(1) -- รอ GUI อื่นๆ โหลด
+	wait(1)
 	sendData()
 
 	while true do
