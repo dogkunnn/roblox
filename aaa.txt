@@ -1,0 +1,97 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ตั้งค่า Endpoint ของ API
+local endpoint = "https://roblox-l5m8.onrender.com/update"
+
+-- ฟังก์ชันค้นหา Text อย่างปลอดภัย
+local function safeFindText(base, path)
+	local obj = base
+	for _, part in ipairs(path) do
+		obj = obj:FindFirstChild(part)
+		if not obj then return "Unknown" end
+	end
+	return obj.Text
+end
+
+-- ฟังก์ชันดึงข้อมูลจาก GUI
+local function getData()
+	local gui = player:WaitForChild("PlayerGui")
+
+	-- ดึงจำนวนเงิน
+	local inventory = gui:WaitForChild("Inventory"):WaitForChild("CanvasGroup")
+	local amountLabel = inventory.Main.Body.Cash.Main.Amount
+	local cash = tonumber(amountLabel.Text) or 0
+
+	-- ดึงชื่อเซิร์ฟเวอร์อย่างปลอดภัย
+	local serverName = safeFindText(gui, {
+		"TopbarStandard", "Holders", "Left", "Widget",
+		"IconButton", "Menu", "IconSpot", "Contents",
+		"IconLabelContainer", "IconLabel"
+	})
+
+	-- ดึงจำนวนผู้เล่น และชื่อ
+	local playerCount = #Players:GetPlayers()
+	local username = player.Name
+
+	return {
+		username = username,
+		cash = cash,
+		playercount = playerCount,
+		servername = serverName
+	}
+end
+
+-- ฟังก์ชันส่งข้อมูลไป API พร้อมระบบ retry
+local function sendData()
+	local data = getData()
+	local jsonData = HttpService:JSONEncode(data)
+
+	print("กำลังส่งข้อมูลไปยัง API:", jsonData)
+
+	local success, response = pcall(function()
+		request({
+			Url = endpoint,
+			Method = "POST",
+			Headers = {
+				["Content-Type"] = "application/json"
+			},
+			Body = jsonData
+		})
+	end)
+
+	if success then
+		print("ส่งข้อมูลสำเร็จ")
+	else
+		warn("ส่งข้อมูลล้มเหลว:", response)
+		wait(2)
+		sendData()
+	end
+end
+
+-- เริ่มส่งข้อมูลอัตโนมัติหลังจาก servername โหลดเสร็จ
+task.spawn(function()
+	local gui = player:WaitForChild("PlayerGui")
+
+	repeat
+		wait(1)
+	until gui
+		:FindFirstChild("TopbarStandard")
+		and gui.TopbarStandard:FindFirstChild("Holders")
+		and gui.TopbarStandard.Holders:FindFirstChild("Left")
+		and gui.TopbarStandard.Holders.Left:FindFirstChild("Widget")
+		and gui.TopbarStandard.Holders.Left.Widget:FindFirstChild("IconButton")
+		and gui.TopbarStandard.Holders.Left.Widget.IconButton:FindFirstChild("Menu")
+		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu:FindFirstChild("IconSpot")
+		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu.IconSpot:FindFirstChild("Contents")
+		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu.IconSpot.Contents:FindFirstChild("IconLabelContainer")
+		and gui.TopbarStandard.Holders.Left.Widget.IconButton.Menu.IconSpot.Contents.IconLabelContainer:FindFirstChild("IconLabel")
+
+	sendData()
+
+	while true do
+		wait(1)
+		sendData()
+	end
+end)
