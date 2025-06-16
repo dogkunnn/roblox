@@ -1,0 +1,102 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ข้อมูล Supabase
+local supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co"
+local supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  -- ปิดท้ายด้วย ... เพื่อความปลอดภัย
+local endpoint = supabaseUrl .. "/rest/v1/players"
+
+-- ฟังก์ชันหา Text จาก GUI
+local function safeFindText(base, path, maxWaitTime)
+	maxWaitTime = maxWaitTime or 90
+	local elapsed = 0
+	local obj = base
+
+	for _, part in ipairs(path) do
+		local found = nil
+		repeat
+			found = obj:FindFirstChild(part)
+			if not found then
+				wait(1)
+				elapsed += 1
+			end
+		until found or elapsed >= maxWaitTime
+
+		if not found then
+			return "Unknown"
+		end
+		obj = found
+	end
+
+	if obj:IsA("TextLabel") or obj:IsA("TextBox") or obj:IsA("TextButton") then
+		return obj.Text
+	end
+
+	return "Unknown"
+end
+
+-- ดึงข้อมูลผู้เล่น
+local function getData()
+	local gui = player:WaitForChild("PlayerGui")
+	local inventory = gui:WaitForChild("Inventory"):WaitForChild("CanvasGroup")
+	local amountLabel = inventory.Main.Body.Cash.Main.Amount
+	local cash = tonumber(amountLabel.Text) or 0
+
+	local serverName = safeFindText(gui, {
+		"TopbarStandard", "Holders", "Left", "Widget",
+		"IconButton", "Menu", "IconSpot", "Contents",
+		"IconLabelContainer", "IconLabel"
+	}, 90)
+
+	local playerCount = #Players:GetPlayers()
+	local username = player.Name
+	local isoTimestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- UTC Time
+
+	return {
+		username = username,
+		cash = cash,
+		playercount = playerCount,
+		servername = serverName,
+		status = "online",
+		last_online = isoTimestamp
+	}
+end
+
+-- ส่งข้อมูลไปยัง Supabase
+local function sendData()
+	local rawData = getData()
+	local jsonData = HttpService:JSONEncode(rawData)
+
+	print("📤 กำลังส่งข้อมูล:", jsonData)
+
+	local success, response = pcall(function()
+		return http_request({
+			Url = endpoint,
+			Method = "POST",
+			Headers = {
+				["apikey"] = supabaseKey,
+				["Authorization"] = "Bearer " .. supabaseKey,
+				["Prefer"] = "resolution=merge-duplicates"
+				-- ไม่ใส่ Content-Type เพื่อให้ Delta X ไม่ conflict
+			},
+			Body = jsonData
+		})
+	end)
+
+	if success and (response.StatusCode == 200 or response.StatusCode == 201) then
+		print("✅ ส่งข้อมูลสำเร็จ")
+	else
+		warn("❌ ส่งข้อมูลล้มเหลว:", response and response.StatusCode, response and response.Body)
+	end
+end
+
+-- เริ่มส่งข้อมูลทุก 5 วินาที
+task.spawn(function()
+	wait(1)
+	sendData()
+	while true do
+		wait(5)
+		sendData()
+	end
+end)
