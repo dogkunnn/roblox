@@ -4,7 +4,7 @@ local player = Players.LocalPlayer
 
 -- ข้อมูล Supabase
 local supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co"
-local supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."  -- ปิดท้ายด้วย ... เพื่อความปลอดภัย
+local supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubHJ0ZXFtemdybmh6aWJreW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4NDMwNjUsImV4cCI6MjA2MDQxOTA2NX0.fHKi5Cy0RfO65OVedadzCTUi26MTSPN5nKs92zNyYFU"  -- ปิดท้ายด้วย ... เพื่อความปลอดภัย
 local endpoint = supabaseUrl .. "/rest/v1/players"
 
 -- ฟังก์ชันหา Text จาก GUI
