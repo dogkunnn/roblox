@@ -6,6 +6,8 @@ import discord
 from discord.ext import commands
 from supabase import create_client, Client
 import time
+import sys
+print("Python version:", sys.version)
 
 # Flask App
 app = Flask(__name__)
