@@ -21,29 +21,43 @@ end
 
 -- ดึงข้อมูลผู้เล่น
 local function getData()
-	local gui = player:WaitForChild("PlayerGui")
-	local inventory = gui:WaitForChild("Inventory"):WaitForChild("CanvasGroup")
-	local amountLabel = inventory.Main.Body.Cash.Main.Amount
-	local cash = tonumber(amountLabel.Text) or 0
+	local success, result = pcall(function()
+		local gui = player:WaitForChild("PlayerGui", 5)
+		local inventory = gui:WaitForChild("Inventory", 5):WaitForChild("CanvasGroup", 5)
+		local amountLabel = inventory.Main.Body.Cash.Main.Amount
 
-	local playerCount = #Players:GetPlayers()
-	local username = player.Name
-	local isoTimestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- เวลาปัจจุบัน UTC
+		local rawText = amountLabel.Text or "0"
+		rawText = rawText:gsub(",", ""):gsub("%s+", "") -- ลบ , และช่องว่าง
+		local cash = tonumber(rawText) or 0
 
-	return {
-		username = username,
-		cash = cash,
-		playercount = playerCount,
-		status = "online",
-		last_online = isoTimestamp
-	}
+		local playerCount = #Players:GetPlayers()
+		local username = player.Name
+		local isoTimestamp = os.date("!%Y-%m-%dT%H:%M:%SZ") -- เวลาปัจจุบัน (UTC ISO 8601)
+
+		return {
+			username = username,
+			cash = cash,
+			playercount = playerCount,
+			status = "online",
+			last_online = isoTimestamp
+		}
+	end)
+
+	if not success then
+		warn("❌ ไม่สามารถดึงข้อมูลผู้เล่น:", result)
+		showNotification("❌ ดึงข้อมูลล้มเหลว", tostring(result))
+		return nil
+	end
+
+	return result
 end
 
 -- ส่งข้อมูลไปยัง Supabase
 local function sendData()
 	local rawData = getData()
-	local jsonData = HttpService:JSONEncode(rawData)
+	if not rawData then return end
 
+	local jsonData = HttpService:JSONEncode(rawData)
 	print("📤 กำลังส่งข้อมูล:", jsonData)
 
 	local success, response = pcall(function()
@@ -53,18 +67,21 @@ local function sendData()
 			Headers = {
 				["apikey"] = supabaseKey,
 				["Authorization"] = "Bearer " .. supabaseKey,
+				["Content-Type"] = "application/json",
 				["Prefer"] = "resolution=merge-duplicates"
 			},
 			Body = jsonData
 		})
 	end)
 
-	if success and (response.StatusCode == 200 or response.StatusCode == 201) then
+	if success and response and (response.StatusCode == 200 or response.StatusCode == 201) then
 		print("✅ ส่งข้อมูลสำเร็จ")
-		showNotification("✅ ส่งข้อมูลสำเร็จ", "อัปโหลดข้อมูลผู้เล่นเรียบร้อย")
+		showNotification("✅ สำเร็จ", "ส่งข้อมูลผู้เล่นเรียบร้อย")
 	else
-		warn("❌ ส่งข้อมูลล้มเหลว:", response and response.StatusCode, response and response.Body)
-		showNotification("❌ ส่งข้อมูลล้มเหลว", "เช็ค Token หรืออินเทอร์เน็ตอีกครั้ง")
+		local status = response and response.StatusCode or "unknown"
+		local body = response and response.Body or "no response"
+		warn("❌ ส่งข้อมูลล้มเหลว:", status, body)
+		showNotification("❌ ล้มเหลว", "ส่งข้อมูลไม่สำเร็จ: " .. tostring(status))
 	end
 end
 
