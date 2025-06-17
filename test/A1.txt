@@ -1,0 +1,66 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+
+-- ข้อมูล Supabase
+local supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co"
+local supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubHJ0ZXFtemdybmh6aWJreW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4NDMwNjUsImV4cCI6MjA2MDQxOTA2NX0.fHKi5Cy0RfO65OVedadzCTUi26MTSPN5nKs92zNyYFU"
+local endpoint = supabaseUrl .. "/rest/v1/players"
+
+-- ดึงข้อมูลผู้เล่น
+local function getData()
+	local gui = player:WaitForChild("PlayerGui")
+	local inventory = gui:WaitForChild("Inventory"):WaitForChild("CanvasGroup")
+	local amountLabel = inventory.Main.Body.Cash.Main.Amount
+	local cash = tonumber(amountLabel.Text) or 0
+
+	local playerCount = #Players:GetPlayers()
+	local username = player.Name
+	local isoTimestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- UTC Time
+
+	return {
+		username = username,
+		cash = cash,
+		playercount = playerCount,
+		status = "online",
+		last_online = isoTimestamp
+	}
+end
+
+-- ส่งข้อมูลไปยัง Supabase
+local function sendData()
+	local rawData = getData()
+	local jsonData = HttpService:JSONEncode(rawData)
+
+	print("📤 กำลังส่งข้อมูล:", jsonData)
+
+	local success, response = pcall(function()
+		return http_request({
+			Url = endpoint,
+			Method = "POST",
+			Headers = {
+				["apikey"] = supabaseKey,
+				["Authorization"] = "Bearer " .. supabaseKey,
+				["Prefer"] = "resolution=merge-duplicates"
+				-- ไม่ใส่ Content-Type เพื่อให้ Delta X ไม่ conflict
+			},
+			Body = jsonData
+		})
+	end)
+
+	if success and (response.StatusCode == 200 or response.StatusCode == 201) then
+		print("✅ ส่งข้อมูลสำเร็จ")
+	else
+		warn("❌ ส่งข้อมูลล้มเหลว:", response and response.StatusCode, response and response.Body)
+	end
+end
+
+-- เริ่มส่งข้อมูลทุก 5 วินาที
+task.spawn(function()
+	wait(1)
+	sendData()
+	while true do
+		wait(5)
+		sendData()
+	end
+end)
