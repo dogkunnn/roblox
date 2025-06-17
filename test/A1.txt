@@ -1,11 +1,23 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local StarterGui = game:GetService("StarterGui")
 local player = Players.LocalPlayer
 
 -- ข้อมูล Supabase
 local supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co"
 local supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubHJ0ZXFtemdybmh6aWJreW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4NDMwNjUsImV4cCI6MjA2MDQxOTA2NX0.fHKi5Cy0RfO65OVedadzCTUi26MTSPN5nKs92zNyYFU"
 local endpoint = supabaseUrl .. "/rest/v1/players"
+
+-- ฟังก์ชันแสดงแจ้งเตือน
+local function showNotification(title, text)
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = title,
+			Text = text,
+			Duration = 3
+		})
+	end)
+end
 
 -- ดึงข้อมูลผู้เล่น
 local function getData()
@@ -16,7 +28,7 @@ local function getData()
 
 	local playerCount = #Players:GetPlayers()
 	local username = player.Name
-	local isoTimestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- UTC Time
+	local isoTimestamp = os.date("!%Y-%m-%dT%H:%M:%SZ")  -- เวลาปัจจุบัน UTC
 
 	return {
 		username = username,
@@ -42,7 +54,6 @@ local function sendData()
 				["apikey"] = supabaseKey,
 				["Authorization"] = "Bearer " .. supabaseKey,
 				["Prefer"] = "resolution=merge-duplicates"
-				-- ไม่ใส่ Content-Type เพื่อให้ Delta X ไม่ conflict
 			},
 			Body = jsonData
 		})
@@ -50,8 +61,10 @@ local function sendData()
 
 	if success and (response.StatusCode == 200 or response.StatusCode == 201) then
 		print("✅ ส่งข้อมูลสำเร็จ")
+		showNotification("✅ ส่งข้อมูลสำเร็จ", "อัปโหลดข้อมูลผู้เล่นเรียบร้อย")
 	else
 		warn("❌ ส่งข้อมูลล้มเหลว:", response and response.StatusCode, response and response.Body)
+		showNotification("❌ ส่งข้อมูลล้มเหลว", "เช็ค Token หรืออินเทอร์เน็ตอีกครั้ง")
 	end
 end
 
