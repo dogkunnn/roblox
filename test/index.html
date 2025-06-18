@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8" />
+    <title>ตารางสถานะผู้เล่นแบบเรียลไทม์ + Drag & Drop</title>
+    <style>
+        body {
+            font-family: "Sarabun", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f7f9fc;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 30px;
+            font-weight: 700;
+            color: #2c3e50;
+            text-align: center;
+            user-select: none;
+        }
+
+        .summary {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .box {
+            background: white;
+            padding: 18px 28px;
+            border-radius: 14px;
+            box-shadow: 0 4px 8px rgb(0 0 0 / 0.08);
+            min-width: 180px;
+            font-weight: 600;
+            font-size: 1.15rem;
+            text-align: center;
+            color: #34495e;
+            user-select: none;
+            transition: background-color 0.3s ease;
+        }
+        .box:hover {
+            background-color: #e8f0fe;
+        }
+
+        /* ตัวกรองและปุ่มบนสุด */
+        .top-controls {
+            width: 100%;
+            max-width: 900px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .filter-container {
+            min-width: 160px;
+            user-select: none;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: block;
+            color: #34495e;
+            font-size: 1rem;
+        }
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            font-size: 1rem;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            background: white;
+            color: #2c3e50;
+            cursor: pointer;
+            transition: border-color 0.25s ease;
+        }
+        select:hover, select:focus {
+            border-color: #1d6fa5;
+            outline: none;
+        }
+
+        #delete-selected {
+            padding: 10px 24px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            background-color: #e74c3c;
+            border: none;
+            border-radius: 9px;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.25s ease;
+            user-select: none;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        #delete-selected:disabled {
+            background-color: #c0392b;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            box-shadow: 0 5px 15px rgb(0 0 0 / 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            user-select: none;
+        }
+        thead {
+            background: #3498db;
+            color: white;
+            font-weight: 700;
+        }
+        th, td {
+            padding: 14px 18px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+            font-size: 1rem;
+        }
+        tbody tr:hover {
+            background-color: #f1f7ff;
+        }
+
+        .online {
+            color: #27ae60;
+            font-weight: 700;
+        }
+        .offline {
+            color: #c0392b;
+            font-weight: 700;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        /* กำหนด style สำหรับลาก */
+        tbody tr.dragging {
+            opacity: 0.5;
+            background-color: #dceeff !important;
+        }
+        tbody tr.drag-over {
+            border-top: 3px solid #3498db;
+        }
+
+        /* Custom Alert/Popup */
+        .custom-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease-in-out;
+            max-width: 80%;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        .custom-alert.show {
+            opacity: 1;
+        }
+
+        /* --- Custom Confirmation Modal Styles --- */
+        .custom-modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1001; /* Sit on top of everything */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+            padding-top: 50px; /* Offset from top */
+        }
+
+        .custom-modal.show {
+            display: flex; /* Show when active */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            transform: scale(0.9);
+            opacity: 0;
+            transition: all 0.3s ease-out;
+        }
+
+        .custom-modal.show .modal-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+
+        .modal-content p {
+            font-size: 1.1rem;
+            color: #555;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .modal-button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            white-space: nowrap;
+        }
+
+        .modal-button.confirm {
+            background-color: #e74c3c;
+            color: white;
+        }
+        .modal-button.confirm:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+        }
+
+        .modal-button.cancel {
+            background-color: #bdc3c7;
+            color: #34495e;
+        }
+        .modal-button.cancel:hover {
+            background-color: #95a5a6;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 600px) {
+            .summary {
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
+            }
+            .box {
+                width: 100%;
+                max-width: 300px;
+            }
+            .top-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            #delete-selected {
+                width: 100%;
+            }
+            table {
+                max-width: 100%;
+            }
+            .modal-content {
+                padding: 20px;
+            }
+            .modal-button {
+                padding: 10px 20px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>📊 ตารางสถานะผู้เล่นแบบเรียลไทม์ (ลากเปลี่ยนลำดับได้)</h1>
+
+    <div class="summary">
+        <div class="box" id="total-cash">💰 เงินรวมทั้งหมด: -</div>
+        <div class="box" id="total-money">💵 คิดเป็นบาท: -</div>
+        <div class="box" id="online-count">🟢 ออนไลน์: -</div>
+        <div class="box" id="offline-count">🔴 ออฟไลน์: -</div>
+    </div>
+
+    <div class="top-controls">
+        <div class="filter-container">
+            <label for="status-filter">กรองสถานะผู้เล่น</label>
+            <select id="status-filter" aria-label="กรองสถานะผู้เล่น">
+                <option value="all" selected>ทั้งหมด</option>
+                <option value="online">ออนไลน์</option>
+                <option value="offline">ออฟไลน์</option>
+            </select>
+        </div>
+
+        <div class="filter-container">
+            <label for="sort-cash">เรียงเงิน</label>
+            <select id="sort-cash" aria-label="เรียงเงิน">
+                <option value="none" selected>ไม่เรียง</option>
+                <option value="desc">มากไปน้อย</option>
+                <option value="asc">น้อยไปมาก</option>
+            </select>
+        </div>
+
+        <button id="delete-selected" disabled>ลบผู้เล่นที่เลือก</button>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th style="width: 36px;"><input type="checkbox" id="select-all" title="เลือกทั้งหมด" aria-label="เลือกทั้งหมด" /></th>
+                <th>🧑 Username</th>
+                <th>💸 Cash</th>
+                <th>👥 Player Count</th>
+                <th>📶 Status</th>
+                <th>🕒 Last Online</th>
+            </tr>
+        </thead>
+        <tbody id="player-table" draggable="false">
+        </tbody>
+    </table>
+
+    <div id="confirm-modal" class="custom-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">ยืนยันการลบข้อมูล</h3>
+            <p id="modal-message">คุณต้องการลบผู้เล่น **X** คนหรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้</p>
+            <div class="modal-buttons">
+                <button class="modal-button cancel" id="modal-cancel">ยกเลิก</button>
+                <button class="modal-button confirm" id="modal-confirm">ยืนยันการลบ</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co";
+        // ตรวจสอบให้แน่ใจว่า Supabase Key นี้มีสิทธิ์ 'delete' ในตาราง 'players'
+        const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubHJ0ZXFtemdybmh6aWJreW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4NDMwNjUsImV4cCI6MjA2MDQxOTA2NX0.fHKi5Cy0RfO65OVedadzCTUi26MTSPN5nKs92zNyYFU";
+
+        const headers = {
+            apikey: supabaseKey,
+            Authorization: `Bearer ${supabaseKey}`,
+            Accept: "application/json",
+            "Content-Type": "application/json",
+        };
+
+        let playersData = [];
+        let currentFilter = "all";
+        let currentSort = "none";
+
+        const playerTable = document.getElementById("player-table");
+        const totalCashEl = document.getElementById("total-cash");
+        const totalMoneyEl = document.getElementById("total-money");
+        const onlineCountEl = document.getElementById("online-count");
+        const offlineCountEl = document.getElementById("offline-count");
+
+        const statusFilter = document.getElementById("status-filter");
+        const sortCashSelect = document.getElementById("sort-cash");
+        const deleteBtn = document.getElementById("delete-selected");
+        const selectAllCheckbox = document.getElementById("select-all");
+
+        // Custom Modal Elements
+        const confirmModal = document.getElementById("confirm-modal");
+        const modalTitle = document.getElementById("modal-title");
+        const modalMessage = document.getElementById("modal-message");
+        const modalConfirmBtn = document.getElementById("modal-confirm");
+        const modalCancelBtn = document.getElementById("modal-cancel");
+
+        let confirmCallback = null; // Store the function to call on confirm
+
+        function formatMoney(cash) {
+            return (cash / 1000000 * 100).toFixed(2) + " บาท";
+        }
+
+        // Function to show a custom alert message
+        function showCustomAlert(message, duration = 5000) {
+            let alertBox = document.querySelector(".custom-alert");
+            if (!alertBox) {
+                alertBox = document.createElement("div");
+                alertBox.classList.add("custom-alert");
+                document.body.appendChild(alertBox);
+            }
+            alertBox.textContent = message;
+            alertBox.classList.add("show");
+
+            setTimeout(() => {
+                alertBox.classList.remove("show");
+            }, duration);
+        }
+
+        // Function to show custom confirmation modal
+        function showConfirmModal(title, message, onConfirm) {
+            modalTitle.textContent = title;
+            modalMessage.innerHTML = message; // Using innerHTML for bold formatting
+            confirmCallback = onConfirm;
+            confirmModal.classList.add("show");
+        }
+
+        // Event listeners for custom confirmation modal buttons
+        modalConfirmBtn.onclick = () => {
+            if (confirmCallback) {
+                confirmCallback(true);
+            }
+            confirmModal.classList.remove("show");
+            confirmCallback = null; // Clear callback
+        };
+
+        modalCancelBtn.onclick = () => {
+            if (confirmCallback) {
+                confirmCallback(false);
+            }
+            confirmModal.classList.remove("show");
+            confirmCallback = null; // Clear callback
+        };
+
+        // Close modal if click outside (optional)
+        confirmModal.onclick = (e) => {
+            if (e.target === confirmModal) {
+                if (confirmCallback) {
+                    confirmCallback(false); // Treat as cancel if clicking outside
+                }
+                confirmModal.classList.remove("show");
+                confirmCallback = null;
+            }
+        };
+
+
+        async function fetchPlayers() {
+            console.log("📡 กำลังดึงข้อมูลผู้เล่นจาก Supabase...");
+            try {
+                const res = await fetch(`${supabaseUrl}/rest/v1/players?select=*&order=username.asc`, {
+                    headers,
+                });
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Error: ${res.status} ${res.statusText} - ${errorText}`);
+                }
+                const data = await res.json();
+                playersData = data;
+                console.log("✅ ดึงข้อมูลสำเร็จ:", playersData.length, "ผู้เล่น");
+                renderPlayers();
+            } catch (error) {
+                console.error("❌ ดึงข้อมูลล้มเหลว:", error);
+                showCustomAlert("ดึงข้อมูลล้มเหลว: " + error.message, 8000); // แสดงข้อผิดพลาดนานขึ้น
+            }
+        }
+
+        function applyFilterAndSort(data) {
+            // กรองสถานะ
+            let filtered = data.filter(p => {
+                if (currentFilter === "online") return p.status === "online";
+                if (currentFilter === "offline") return p.status !== "online";
+                return true;
+            });
+
+            // เรียงเงิน
+            if (currentSort === "desc") {
+                filtered.sort((a, b) => (b.cash || 0) - (a.cash || 0));
+            } else if (currentSort === "asc") {
+                filtered.sort((a, b) => (a.cash || 0) - (b.cash || 0));
+            }
+
+            return filtered;
+        }
+
+        function renderPlayers() {
+            playerTable.innerHTML = "";
+            let totalCash = 0;
+            let online = 0;
+            let offline = 0;
+
+            let filteredPlayers = applyFilterAndSort(playersData);
+
+            filteredPlayers.forEach((player, index) => {
+                const username = player.username || "ไม่มีชื่อ";
+                const cash = player.cash || 0;
+                const playercount = player.playercount ?? "-";
+                const status = player.status === "online" ? "ออนไลน์" : "ออฟไลน์";
+                const statusClass = player.status === "online" ? "online" : "offline";
+                const lastOnline = player.last_online ? new Date(player.last_online).toLocaleString() : "-";
+
+                totalCash += cash;
+                if (player.status === "online") online++;
+                else offline++;
+
+                const tr = document.createElement("tr");
+                tr.setAttribute("draggable", "true");
+                tr.dataset.username = username; // เก็บ username ใน dataset
+
+                tr.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><input type="checkbox" class="row-checkbox" data-username="${username}" aria-label="เลือกผู้เล่น ${username}" /></td>
+                    <td>${username}</td>
+                    <td>${cash.toLocaleString()}</td>
+                    <td>${playercount}</td>
+                    <td class="${statusClass}">${status}</td>
+                    <td>${lastOnline}</td>
+                `;
+                playerTable.appendChild(tr);
+            });
+
+            totalCashEl.innerText = `💰 เงินรวมทั้งหมด: ${totalCash.toLocaleString()}`;
+            totalMoneyEl.innerText = `💵 คิดเป็นบาท: ${formatMoney(totalCash)}`;
+            onlineCountEl.innerText = `🟢 ออนไลน์: ${online}`;
+            offlineCountEl.innerText = `🔴 ออฟไลน์: ${offline}`;
+
+            updateDeleteButtonState();
+            updateSelectAllState();
+            addCheckboxListeners();
+            addDragAndDropListeners();
+            checkPlayerStatusOnline();
+        }
+
+        async function updatePlayerStatus(username, status) {
+            console.log(`ℹ️ กำลังอัปเดตสถานะผู้เล่น ${username} เป็น ${status}...`);
+            try {
+                const res = await fetch(`${supabaseUrl}/rest/v1/players?username=eq.${encodeURIComponent(username)}`, {
+                    method: "PATCH",
+                    headers,
+                    body: JSON.stringify({ status: status }),
+                });
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Error: ${res.status} ${res.statusText} - ${errorText}`);
+                }
+                console.log(`✅ อัปเดตสถานะ ${username} เป็น ${status} สำเร็จ`);
+                await fetchPlayers();
+            } catch (error) {
+                console.error(`❌ อัปเดตสถานะ ${username} ล้มเหลว:`, error);
+                showCustomAlert(`อัปเดตสถานะ ${username} ล้มเหลว: ${error.message}`, 8000);
+            }
+        }
+
+        function checkPlayerStatusOnline() {
+            const now = new Date();
+            console.log("⏱️ กำลังตรวจสอบสถานะผู้เล่นที่ออนไลน์...");
+
+            playersData.forEach(player => {
+                const username = player.username;
+                const lastOnlineStr = player.last_online;
+                const status = player.status;
+
+                if (status === "online" && lastOnlineStr) {
+                    const lastOnlineTime = new Date(lastOnlineStr);
+                    const diffSeconds = (now.getTime() - lastOnlineTime.getTime()) / 1000;
+
+                    console.log(`Debug: ผู้เล่น ${username} | สถานะ: ${status} | last_online: ${lastOnlineStr} | เวลาผ่านไป: ${diffSeconds.toFixed(2)} วินาที`);
+
+                    if (diffSeconds > 30) {
+                        console.warn(`🚨 ผู้เล่น ${username} ไม่ส่งข้อมูลครบ 30 วินาที! กำลังเปลี่ยนสถานะเป็น offline...`);
+                        updatePlayerStatus(username, "offline");
+                    }
+                } else if (status === "online" && !lastOnlineStr) {
+                    console.warn(`⚠️ ผู้เล่น ${username} สถานะออนไลน์แต่ไม่มี last_online. กำลังเปลี่ยนสถานะเป็น offline...`);
+                    updatePlayerStatus(username, "offline");
+                }
+            });
+        }
+
+        function updateDeleteButtonState() {
+            const anyChecked = !!document.querySelector(".row-checkbox:checked");
+            deleteBtn.disabled = !anyChecked;
+            console.log(`Debug: ปุ่มลบสถานะ: ${deleteBtn.disabled ? 'Disabled' : 'Enabled'}`);
+        }
+
+        function updateSelectAllState() {
+            const checkboxes = document.querySelectorAll(".row-checkbox");
+            const checkedBoxes = document.querySelectorAll(".row-checkbox:checked");
+            selectAllCheckbox.checked = checkboxes.length > 0 && checkboxes.length === checkedBoxes.length;
+            selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < checkboxes.length;
+        }
+
+        function addCheckboxListeners() {
+            const checkboxes = document.querySelectorAll(".row-checkbox");
+            checkboxes.forEach(cb => {
+                cb.onchange = () => {
+                    updateDeleteButtonState();
+                    updateSelectAllState();
+                };
+            });
+        }
+
+        statusFilter.onchange = () => {
+            currentFilter = statusFilter.value;
+            renderPlayers();
+        };
+
+        sortCashSelect.onchange = () => {
+            currentSort = sortCashSelect.value;
+            renderPlayers();
+        };
+
+        selectAllCheckbox.onchange = () => {
+            const checkboxes = document.querySelectorAll(".row-checkbox");
+            checkboxes.forEach(cb => {
+                cb.checked = selectAllCheckbox.checked;
+            });
+            updateDeleteButtonState();
+            updateSelectAllState();
+        };
+
+        async function performDelete(checkedBoxes) {
+            console.log(`🗑️ กำลังเริ่มต้นลบผู้เล่นที่เลือก ${checkedBoxes.length} คน...`);
+            let successCount = 0;
+            let failedUsers = [];
+
+            for (const cb of checkedBoxes) {
+                const username = cb.getAttribute("data-username");
+                console.log(`⚙️ กำลังพยายามลบผู้เล่น: ${username}`);
+                try {
+                    const res = await fetch(`${supabaseUrl}/rest/v1/players?username=eq.${encodeURIComponent(username)}`, {
+                        method: "DELETE",
+                        headers,
+                    });
+
+                    if (res.status === 204) {
+                        console.log(`✅ ลบผู้เล่น ${username} สำเร็จ`);
+                        successCount++;
+                    } else {
+                        const errorText = await res.text();
+                        const errorMessage = errorText || `สถานะ: ${res.status} ${res.statusText}`;
+                        console.error(`❌ ลบผู้เล่น ${username} ล้มเหลว: ${errorMessage}. ตรวจสอบ Supabase RLS/สิทธิ์`, res);
+                        failedUsers.push(`${username} (ข้อผิดพลาด: ${errorMessage})`);
+                    }
+                } catch (error) {
+                    console.error(`❌ ลบผู้เล่น ${username} ล้มเหลว (Network/Fetch Error):`, error);
+                    failedUsers.push(`${username} (ข้อผิดพลาดเครือข่าย: ${error.message})`);
+                }
+            }
+
+            let message = "";
+            if (failedUsers.length === 0) {
+                message = `✅ ลบผู้เล่นสำเร็จ: ${successCount} คน`;
+            } else {
+                message = `⚠️ ลบผู้เล่นสำเร็จ ${successCount} คน\nลบไม่สำเร็จ ${failedUsers.length} คน:\n- ${failedUsers.join("\n- ")}\n\nโปรดตรวจสอบสิทธิ์ (RLS) ใน Supabase Dashboard`;
+            }
+            showCustomAlert(message, 7000);
+
+            console.log("ℹ️ ดำเนินการลบเสร็จสิ้น กำลังดึงข้อมูลล่าสุด...");
+            await fetchPlayers();
+        }
+
+        deleteBtn.onclick = () => {
+            const checkedBoxes = [...document.querySelectorAll(".row-checkbox:checked")];
+            if (checkedBoxes.length === 0) {
+                showCustomAlert("กรุณาเลือกผู้เล่นก่อนลบ", 3000);
+                return;
+            }
+
+            const playerCount = checkedBoxes.length;
+            const message = `คุณต้องการลบผู้เล่น **${playerCount}** คนหรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้`;
+
+            showConfirmModal("ยืนยันการลบข้อมูล", message, (confirmed) => {
+                if (confirmed) {
+                    performDelete(checkedBoxes);
+                } else {
+                    console.log("ℹ️ ผู้ใช้ยกเลิกการลบ.");
+                }
+            });
+        };
+
+        // --- Drag & Drop ---
+
+        let draggedRow = null;
+
+        function addDragAndDropListeners() {
+            const rows = playerTable.querySelectorAll("tr");
+            rows.forEach(row => {
+                row.removeEventListener("dragstart", onDragStart);
+                row.removeEventListener("dragover", onDragOver);
+                row.removeEventListener("drop", onDrop);
+                row.removeEventListener("dragend", onDragEnd);
+
+                row.addEventListener("dragstart", onDragStart);
+                row.addEventListener("dragover", onDragOver);
+                row.addEventListener("drop", onDrop);
+                row.addEventListener("dragend", onDragEnd);
+            });
+        }
+
+        function onDragStart(e) {
+            draggedRow = e.currentTarget;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/plain', null);
+            draggedRow.classList.add("dragging");
+            console.log(`ℹ️ เริ่มลาก: ${draggedRow.dataset.username}`);
+        }
+
+        function onDragOver(e) {
+            e.preventDefault();
+            const target = e.currentTarget;
+            if (target === draggedRow) return;
+
+            playerTable.querySelectorAll("tr").forEach(tr => {
+                tr.classList.remove("drag-over");
+                tr.style.borderTop = "";
+                tr.style.borderBottom = "";
+            });
+
+            const bounding = target.getBoundingClientRect();
+            const offset = e.clientY - bounding.top;
+
+            if (offset < bounding.height / 2) {
+                target.classList.add("drag-over");
+                target.style.borderTop = "3px solid #3498db";
+            } else {
+                target.classList.add("drag-over");
+                target.style.borderBottom = "3px solid #3498db";
+            }
+        }
+
+        function onDrop(e) {
+            e.preventDefault();
+            const target = e.currentTarget;
+            if (target === draggedRow) return;
+
+            const bounding = target.getBoundingClientRect();
+            const offset = e.clientY - bounding.top;
+
+            playerTable.querySelectorAll("tr").forEach(tr => {
+                tr.classList.remove("drag-over");
+                tr.style.borderTop = "";
+                tr.style.borderBottom = "";
+            });
+
+            if (offset < bounding.height / 2) {
+                playerTable.insertBefore(draggedRow, target);
+            } else {
+                playerTable.insertBefore(draggedRow, target.nextSibling);
+            }
+            updateRowNumbers();
+            console.log(`✅ วางสำเร็จ: ${draggedRow.dataset.username} ย้ายไปที่ตำแหน่งใหม่`);
+        }
+
+        function onDragEnd(e) {
+            draggedRow.classList.remove("dragging");
+            playerTable.querySelectorAll("tr").forEach(tr => {
+                tr.classList.remove("drag-over");
+                tr.style.borderTop = "";
+                tr.style.borderBottom = "";
+            });
+            draggedRow = null;
+            console.log("ℹ️ สิ้นสุดการลาก");
+        }
+
+        function updateRowNumbers() {
+            const rows = playerTable.querySelectorAll("tr");
+            rows.forEach((row, i) => {
+                row.querySelector("td:first-child").textContent = i + 1;
+            });
+        }
+
+        // --- Initial fetch and interval ---
+        fetchPlayers();
+        setInterval(fetchPlayers, 10000); // ดึงข้อมูลทุก 10 วินาที
+    </script>
+
+</body>
+</html>
