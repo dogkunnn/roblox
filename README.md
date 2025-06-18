@@ -1,26 +1,4 @@
 # setup
-### db
-
-```
-CREATE TABLE IF NOT EXISTS public.players (
-  username text PRIMARY KEY,
-  cash int4,
-  playercount int4,
-  servername text,
-  status text
-);
-```
-
-### Link
-[supabase](https://supabase.com)
-
-### Environment
-```SUPABASE_API_KEY```
-
-### get api 
-```API Docs>API settings```
-```https://youname.onrender.com```
-
 ###ให้สิทธิ์ RLS Policy
 ```
 -- 1. Enable Row Level Security for the 'players' table
@@ -48,3 +26,15 @@ CREATE TABLE public.players (
   last_online TIMESTAMP
 );
 ```
+
+### Link
+[supabase](https://supabase.com)
+
+### Environment
+```SUPABASE_API_KEY```
+
+### get api 
+```API Docs>API settings```
+```https://youname.onrender.com```
+
+
