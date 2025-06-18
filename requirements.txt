@@ -1,5 +1,0 @@
-supabase
-requests
-flask
-py-cord
-
