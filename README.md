@@ -35,6 +35,6 @@ CREATE TABLE public.players (
 
 ### get api 
 ```API Docs>API settings```
-```https://youname.onrender.com```
+```(https://youapi.supabase.co)```
 
 
