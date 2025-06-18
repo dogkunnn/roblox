@@ -1,5 +1,5 @@
 # setup
-###ให้สิทธิ์ RLS Policy
+### ให้สิทธิ์ RLS Policy
 ```
 -- 1. Enable Row Level Security for the 'players' table
 ALTER TABLE public.players ENABLE ROW LEVEL SECURITY;
@@ -16,7 +16,7 @@ USING (true) -- Condition is always true, so access is always granted
 WITH CHECK (true); -- Condition for writes is always true, so writes are always allowed
 ```
 
-###สร้างตรางฐานข้อมูลและcolumn
+### สร้างตรางฐานข้อมูลและcolumn
 ```
 CREATE TABLE public.players (
   username TEXT PRIMARY KEY,
