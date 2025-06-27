@@ -57,6 +57,14 @@ local function sendData()
 	local rawData = getData()
 	if not rawData then return end
 
+	-- 🔒 ถ้ามีคนในเซิร์ฟมากกว่า 15 ให้เตะออก
+	if rawData.playercount > 15 then
+		showNotification("👥 คนเยอะเกิน", "ออกจากเซิร์ฟเวอร์...")
+		wait(1)
+		player:Kick("👥 คนในเซิร์ฟเวอร์เกิน 15 คน")
+		return
+	end
+
 	local jsonData = HttpService:JSONEncode(rawData)
 	print("📤 กำลังส่งข้อมูล:", jsonData)
 
@@ -85,7 +93,7 @@ local function sendData()
 	end
 end
 
--- เริ่มส่งข้อมูลทุก 5 วินาที
+-- เริ่มส่งข้อมูลทุก 40 วินาที
 task.spawn(function()
 	wait(1)
 	sendData()
