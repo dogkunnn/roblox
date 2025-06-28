@@ -61,7 +61,10 @@ local function getData()
 			rawText = rawText:gsub(",", ""):gsub("%s+", "")
 			cash = tonumber(rawText) or 0
 		else
-			warn("⚠️ [DEBUG] ไม่พบ UI แสดงเงินหรือไม่ใช่ TextLabel. กำลังใช้เงิน 0")
+			-- If amountLabel is not found or not a TextLabel, return nil to prevent sending data
+			warn("⚠️ [DEBUG] ไม่พบ UI แสดงเงินหรือไม่ใช่ TextLabel. ไม่สามารถดึงข้อมูลได้.")
+			showNotification("ข้อผิดพลาด", "ไม่พบ UI แสดงเงิน. ไม่สามารถอัปเดตข้อมูลได้.")
+			return nil -- Important: Return nil here to indicate data is not ready
 		end
 
 		local playerCount = #Players:GetPlayers()
@@ -125,7 +128,11 @@ end
 -- Function to send data to Supabase
 local function sendData()
 	local rawData = getData()
-	if not rawData then return end
+	if not rawData then
+        -- If getData returns nil, it means the cash UI was not ready, so we don't send data.
+        print("🚫 [HTTP] ไม่ส่งข้อมูลไปยัง Supabase เนื่องจาก UI แสดงเงินไม่พร้อม.")
+        return
+    end
 
 	-- 🔒 Kick if more than 15 players in server (Client-side kick)
 	if rawData.playercount > 15 then
@@ -138,7 +145,7 @@ local function sendData()
 
 	local jsonData = HttpService:JSONEncode(rawData)
 	print("📤 [HTTP] กำลังส่งข้อมูลไปยัง Supabase...")
-	print("   ข้อมูลที่จะส่ง: " .. jsonData) -- Added "ข้อมูลที่จะส่ง" for clarity in output
+	print("    ข้อมูลที่จะส่ง: " .. jsonData) -- Added "ข้อมูลที่จะส่ง" for clarity in output
 
 	local success, response = pcall(function()
 		return HttpService:RequestAsync({
