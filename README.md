@@ -23,8 +23,11 @@ CREATE TABLE public.players (
   cash INTEGER,
   playercount INTEGER,
   status TEXT,
-  last_online TIMESTAMP
+  last_online TIMESTAMPTZ,
+  is_farming BOOLEAN,
+  kick_player BOOLEAN
 );
+
 ```
 
 ### Link
