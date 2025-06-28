@@ -86,12 +86,10 @@ local function startFishing()
 end
 
 local fishingSpots = {
-    Vector3.new(3020.62, 7.18, 1626.74),
-    Vector3.new(3065.16, 7.45, 1639.31),
-    Vector3.new(3076.17, 7.84, 1634.31),
-    Vector3.new(3036.43, 7.62, 1619.01),
-    Vector3.new(3028.00, 6.79, 1624.63),
-    Vector3.new(3044.85, 7.23, 1622.85)
+   Vector3.new(3035.84, 6.19, 1614.85),
+   Vector3.new(3022.35, 5.78, 1620.28),
+   Vector3.new(3065.29, 6.08, 1632.97),
+   Vector3.new(3010.83, 5.77, 1627.09)
 }
 
 local function getRandomFishingSpot()
