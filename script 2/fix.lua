@@ -4,7 +4,7 @@ local RunService = game:GetService("RunService")
 local hrp = player.Character and player.Character:WaitForChild("HumanoidRootPart")
 local humanoid = player.Character and player.Character:WaitForChild("Humanoid")
 
-local targetPos = Vector3.new(3045.39, 13.36, 1670.62)
+local targetPos = Vector3.new(3045.39, 17, 1670.62)
 local stopDistance = 5
 
 -- ฟังก์ชันทำให้ตัวละครทะลุวัตถุ
