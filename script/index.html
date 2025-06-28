@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8" />
-    <title>ตารางสถานะผู้เล่นแบบเรียลไทม์ + Drag & Drop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตารางสถานะผู้เล่นแบบเรียลไทม์</title>
     <style>
         body {
             font-family: "Sarabun", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -87,11 +88,17 @@
             outline: none;
         }
 
-        #delete-selected {
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        #delete-selected, #refresh-data {
             padding: 10px 24px;
             font-size: 1.1rem;
             font-weight: 700;
-            background-color: #e74c3c;
             border: none;
             border-radius: 9px;
             color: white;
@@ -101,11 +108,21 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
+        #delete-selected {
+            background-color: #e74c3c;
+        }
         #delete-selected:disabled {
             background-color: #c0392b;
             cursor: not-allowed;
             opacity: 0.6;
         }
+        #refresh-data {
+            background-color: #2ecc71; /* Green for refresh */
+        }
+        #refresh-data:hover {
+            background-color: #27ae60;
+        }
+
 
         table {
             border-collapse: collapse;
@@ -140,20 +157,21 @@
             color: #c0392b;
             font-weight: 700;
         }
+        /* New styles for farming status */
+        .farming {
+            color: #f39c12; /* Orange for farming */
+            font-weight: 700;
+        }
+        .not-farming {
+            color: #555; /* Dark grey for not farming */
+            font-weight: 500;
+        }
+
 
         input[type="checkbox"] {
             width: 18px;
             height: 18px;
             cursor: pointer;
-        }
-
-        /* กำหนด style สำหรับลาก */
-        tbody tr.dragging {
-            opacity: 0.5;
-            background-color: #dceeff !important;
-        }
-        tbody tr.drag-over {
-            border-top: 3px solid #3498db;
         }
 
         /* Custom Alert/Popup */
@@ -266,6 +284,28 @@
             transform: translateY(-2px);
         }
 
+        /* New Kick button style */
+        .kick-button {
+            background-color: #3498db; /* Blue */
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+        }
+        .kick-button:hover {
+            background-color: #2980b9;
+        }
+        .kick-button:disabled {
+            background-color: #9bbcdb;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+
         @media (max-width: 600px) {
             .summary {
                 flex-direction: column;
@@ -280,11 +320,19 @@
                 flex-direction: column;
                 align-items: stretch;
             }
-            #delete-selected {
+            .action-buttons {
+                justify-content: center;
+                width: 100%;
+            }
+            #delete-selected, #refresh-data {
                 width: 100%;
             }
             table {
                 max-width: 100%;
+            }
+            th, td {
+                padding: 10px 12px; /* Adjust padding for smaller screens */
+                font-size: 0.9rem;
             }
             .modal-content {
                 padding: 20px;
@@ -298,13 +346,16 @@
 </head>
 <body>
 
-    <h1>📊 ตารางสถานะผู้เล่นแบบเรียลไทม์ (ลากเปลี่ยนลำดับได้)</h1>
+    <h1>📊 ตารางสถานะผู้เล่นแบบเรียลไทม์</h1>
 
     <div class="summary">
+        <div class="box" id="total-players-count">👥 ผู้เล่นทั้งหมด: -</div>
         <div class="box" id="total-cash">💰 เงินรวมทั้งหมด: -</div>
         <div class="box" id="total-money">💵 คิดเป็นบาท: -</div>
         <div class="box" id="online-count">🟢 ออนไลน์: -</div>
         <div class="box" id="offline-count">🔴 ออฟไลน์: -</div>
+        <div class="box" id="farming-count">🎣 กำลังฟาร์ม: -</div>
+        <div class="box" id="not-farming-count">🛋️ ไม่ฟาร์ม: -</div>
     </div>
 
     <div class="top-controls">
@@ -314,6 +365,8 @@
                 <option value="all" selected>ทั้งหมด</option>
                 <option value="online">ออนไลน์</option>
                 <option value="offline">ออฟไลน์</option>
+                <option value="farming">กำลังฟาร์ม</option>
+                <option value="not-farming">ไม่ฟาร์ม</option>
             </select>
         </div>
 
@@ -326,7 +379,10 @@
             </select>
         </div>
 
-        <button id="delete-selected" disabled>ลบผู้เล่นที่เลือก</button>
+        <div class="action-buttons">
+            <button id="refresh-data">🔄 รีเฟรชข้อมูล</button>
+            <button id="delete-selected" disabled>ลบผู้เล่นที่เลือก</button>
+        </div>
     </div>
 
     <table>
@@ -338,10 +394,12 @@
                 <th>💸 Cash</th>
                 <th>👥 Player Count</th>
                 <th>📶 Status</th>
+                <th>🎣 สถานะฟาร์ม</th>
                 <th>🕒 Last Online</th>
+                <th>🦶 เตะ!</th>
             </tr>
         </thead>
-        <tbody id="player-table" draggable="false">
+        <tbody id="player-table">
         </tbody>
     </table>
 
@@ -358,7 +416,8 @@
 
     <script>
         const supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co";
-        // ตรวจสอบให้แน่ใจว่า Supabase Key นี้มีสิทธิ์ 'delete' ในตาราง 'players'
+        // This key needs 'update' permissions on the 'players' table for the kick feature
+        // It's HIGHLY RECOMMENDED to use a secure backend for write/delete operations
         const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubHJ0ZXFtemdybmh6aWJreW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4NDMwNjUsImV4cCI6MjA2MDQxOTA2NX0.fHKi5Cy0RfO65OVedadzCTUi26MTSPN5nKs92zNyYFU";
 
         const headers = {
@@ -368,19 +427,25 @@
             "Content-Type": "application/json",
         };
 
-        let playersData = [];
+        let playersData = []; // This will hold the raw data from Supabase
+        let displayedPlayers = []; // This will hold data after filtering/sorting for rendering
+
         let currentFilter = "all";
         let currentSort = "none";
 
         const playerTable = document.getElementById("player-table");
+        const totalPlayersCountEl = document.getElementById("total-players-count");
         const totalCashEl = document.getElementById("total-cash");
         const totalMoneyEl = document.getElementById("total-money");
         const onlineCountEl = document.getElementById("online-count");
         const offlineCountEl = document.getElementById("offline-count");
+        const farmingCountEl = document.getElementById("farming-count");
+        const notFarmingCountEl = document.getElementById("not-farming-count");
 
         const statusFilter = document.getElementById("status-filter");
         const sortCashSelect = document.getElementById("sort-cash");
         const deleteBtn = document.getElementById("delete-selected");
+        const refreshBtn = document.getElementById("refresh-data");
         const selectAllCheckbox = document.getElementById("select-all");
 
         // Custom Modal Elements
@@ -396,8 +461,43 @@
             return (cash / 1000000 * 100).toFixed(2) + " บาท";
         }
 
-        // Function to show a custom alert message
+        function formatRelativeTime(timestamp) {
+            if (!timestamp) return "-";
+
+            const now = new Date();
+            const past = new Date(timestamp);
+            const seconds = Math.floor((now - past) / 1000);
+
+            if (seconds < 0) return "อนาคต?"; // Handle future dates just in case
+
+            if (seconds < 60) {
+                return `${seconds} วินาทีที่แล้ว`;
+            }
+
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            if (minutes < 60) {
+                return `${minutes} นาที ${remainingSeconds} วินาทีที่แล้ว`;
+            }
+
+            const hours = Math.floor(minutes / 60);
+            const remainingMinutes = minutes % 60;
+            if (hours < 24) {
+                return `${hours} ชั่วโมง ${remainingMinutes} นาทีที่แล้ว`;
+            }
+
+            const days = Math.floor(hours / 24);
+            const remainingHours = hours % 24;
+            return `${days} วัน ${remainingHours} ชั่วโมงที่แล้ว`;
+        }
+
+        /**
+         * แสดงข้อความแจ้งเตือนแบบ Custom Popup
+         * @param {string} message ข้อความที่จะแสดง
+         * @param {number} duration ระยะเวลาที่แสดง (มิลลิวินาที)
+         */
         function showCustomAlert(message, duration = 5000) {
+            console.log(`[ALERT] ${message}`); // Log to console as well
             let alertBox = document.querySelector(".custom-alert");
             if (!alertBox) {
                 alertBox = document.createElement("div");
@@ -412,36 +512,37 @@
             }, duration);
         }
 
-        // Function to show custom confirmation modal
         function showConfirmModal(title, message, onConfirm) {
+            console.log(`[MODAL] แสดงโมดัล: ${title}`);
             modalTitle.textContent = title;
-            modalMessage.innerHTML = message; // Using innerHTML for bold formatting
+            modalMessage.innerHTML = message;
             confirmCallback = onConfirm;
             confirmModal.classList.add("show");
         }
 
-        // Event listeners for custom confirmation modal buttons
         modalConfirmBtn.onclick = () => {
+            console.log("[MODAL] ยืนยันถูกกด");
             if (confirmCallback) {
                 confirmCallback(true);
             }
             confirmModal.classList.remove("show");
-            confirmCallback = null; // Clear callback
+            confirmCallback = null;
         };
 
         modalCancelBtn.onclick = () => {
+            console.log("[MODAL] ยกเลิกถูกกด");
             if (confirmCallback) {
                 confirmCallback(false);
             }
             confirmModal.classList.remove("show");
-            confirmCallback = null; // Clear callback
+            confirmCallback = null;
         };
 
-        // Close modal if click outside (optional)
         confirmModal.onclick = (e) => {
             if (e.target === confirmModal) {
+                console.log("[MODAL] คลิกนอกโมดัล");
                 if (confirmCallback) {
-                    confirmCallback(false); // Treat as cancel if clicking outside
+                    confirmCallback(false);
                 }
                 confirmModal.classList.remove("show");
                 confirmCallback = null;
@@ -462,322 +563,292 @@
                 const data = await res.json();
                 playersData = data;
                 console.log("✅ ดึงข้อมูลสำเร็จ:", playersData.length, "ผู้เล่น");
-                renderPlayers();
+                processAndRenderPlayers(); // Process and render all players
             } catch (error) {
                 console.error("❌ ดึงข้อมูลล้มเหลว:", error);
-                showCustomAlert("ดึงข้อมูลล้มเหลว: " + error.message, 8000); // แสดงข้อผิดพลาดนานขึ้น
+                showCustomAlert("ดึงข้อมูลล้มเหลว: " + error.message, 8000);
             }
         }
 
-        function applyFilterAndSort(data) {
-            // กรองสถานะ
-            let filtered = data.filter(p => {
-                if (currentFilter === "online") return p.status === "online";
-                if (currentFilter === "offline") return p.status !== "online";
-                return true;
+        async function updatePlayerSupabase(username, updates) {
+            console.log(`💡 กำลังส่ง PATCH ไป Supabase สำหรับ ${username}:`, updates);
+            try {
+                const res = await fetch(`${supabaseUrl}/rest/v1/players?username=eq.${encodeURIComponent(username)}`, {
+                    method: "PATCH",
+                    headers,
+                    body: JSON.stringify(updates),
+                });
+                if (!res.ok) {
+                    const errorText = await res.text();
+                    throw new Error(`Error: ${res.status} ${res.statusText} - ${errorText}`);
+                }
+                console.log(`✅ อัปเดตข้อมูลผู้เล่น ${username} สำเร็จ:`, updates);
+                // After successful update, we can re-process and re-render
+                // to reflect immediate changes if needed, but the periodic fetch
+                // might be enough depending on update frequency.
+                // For 'kick_player' it's usually one-off, so no re-render needed.
+            } catch (error) {
+                console.error(`❌ อัปเดตข้อมูลผู้เล่น ${username} ล้มเหลว:`, error);
+                showCustomAlert(`อัปเดตผู้เล่น ${username} ล้มเหลว: ${error.message}`, 8000);
+            }
+        }
+
+        function processAndRenderPlayers() {
+            const now = new Date();
+            let onlineCount = 0;
+            let offlineCount = 0;
+            let farmingCount = 0;
+            let notFarmingCount = 0;
+            let totalCash = 0;
+
+            console.log("🔄 กำลังประมวลผลและแสดงผลข้อมูลผู้เล่น...");
+
+            // First, update statuses in the local playersData based on time
+            playersData.forEach(player => {
+                const lastOnlineTime = player.last_online ? new Date(player.last_online) : null;
+                const diffSeconds = lastOnlineTime ? (now.getTime() - lastOnlineTime.getTime()) / 1000 : Infinity;
+
+                // Update online/offline status
+                // A player is offline if last_online is null, or if it's been more than 70 seconds
+                if (!lastOnlineTime || diffSeconds > 70) {
+                    if (player.status !== "offline") {
+                        console.log(`[STATUS CHANGE] ผู้เล่น ${player.username}: จาก ${player.status} เป็น offline (นานเกิน 70 วินาที)`);
+                        player.status = "offline";
+                    }
+                } else {
+                    if (player.status !== "online") {
+                        console.log(`[STATUS CHANGE] ผู้เล่น ${player.username}: จาก ${player.status} เป็น online`);
+                        player.status = "online";
+                    }
+                }
+
+                // Update farming status
+                // A player is not farming if `is_farming` is explicitly false from Roblox,
+                // OR if they are marked as farming but have been offline for > 70 seconds.
+                if (player.is_farming === true && player.status === "offline") {
+                     if (player.is_farming !== false) { // Log only if state actually changes
+                        console.log(`[FARM STATUS CHANGE] ผู้เล่น ${player.username}: จากกำลังฟาร์มเป็นไม่ฟาร์ม (ผู้เล่นออฟไลน์)`);
+                        player.is_farming = false; // Player is offline, so cannot be farming
+                    }
+                }
+                // If player.is_farming is false from Roblox, we respect that.
+                // If player.is_farming is true and they are online, we respect that.
             });
 
-            // เรียงเงิน
+            // Apply filter and sort for display
+            displayedPlayers = playersData.filter(p => {
+                if (currentFilter === "online") return p.status === "online";
+                if (currentFilter === "offline") return p.status === "offline";
+                if (currentFilter === "farming") return p.is_farming === true && p.status === "online";
+                if (currentFilter === "not-farming") return p.is_farming === false && p.status === "online";
+                return true; // "all"
+            });
+
             if (currentSort === "desc") {
-                filtered.sort((a, b) => (b.cash || 0) - (a.cash || 0));
+                displayedPlayers.sort((a, b) => (b.cash || 0) - (a.cash || 0));
             } else if (currentSort === "asc") {
-                filtered.sort((a, b) => (a.cash || 0) - (b.cash || 0));
+                displayedPlayers.sort((a, b) => (a.cash || 0) - (b.cash || 0));
             }
 
-            return filtered;
-        }
 
-        function renderPlayers() {
             playerTable.innerHTML = "";
-            let totalCash = 0;
-            let online = 0;
-            let offline = 0;
-
-            let filteredPlayers = applyFilterAndSort(playersData);
-
-            filteredPlayers.forEach((player, index) => {
+            displayedPlayers.forEach((player, index) => {
                 const username = player.username || "ไม่มีชื่อ";
                 const cash = player.cash || 0;
                 const playercount = player.playercount ?? "-";
-                const status = player.status === "online" ? "ออนไลน์" : "ออฟไลน์";
+
+                // Determine display status based on processed data
+                const statusDisplay = player.status === "online" ? "ออนไลน์" : "ออฟไลน์";
                 const statusClass = player.status === "online" ? "online" : "offline";
-                const lastOnline = player.last_online ? new Date(player.last_online).toLocaleString() : "-";
+
+                const farmingStatusDisplay = player.is_farming ? "กำลังฟาร์ม" : "ไม่ฟาร์ม";
+                const farmingStatusClass = player.is_farming ? "farming" : "not-farming";
+
+                const lastOnlineDisplay = formatRelativeTime(player.last_online);
 
                 totalCash += cash;
-                if (player.status === "online") online++;
-                else offline++;
+                if (player.status === "online") {
+                    onlineCount++;
+                    if (player.is_farming) {
+                        farmingCount++;
+                    } else {
+                        notFarmingCount++;
+                    }
+                } else {
+                    offlineCount++;
+                }
 
                 const tr = document.createElement("tr");
-                tr.setAttribute("draggable", "true");
-                tr.dataset.username = username; // เก็บ username ใน dataset
-
                 tr.innerHTML = `
                     <td>${index + 1}</td>
                     <td><input type="checkbox" class="row-checkbox" data-username="${username}" aria-label="เลือกผู้เล่น ${username}" /></td>
                     <td>${username}</td>
                     <td>${cash.toLocaleString()}</td>
                     <td>${playercount}</td>
-                    <td class="${statusClass}">${status}</td>
-                    <td>${lastOnline}</td>
+                    <td class="${statusClass}">${statusDisplay}</td>
+                    <td class="${farmingStatusClass}">${farmingStatusDisplay}</td>
+                    <td>${lastOnlineDisplay}</td>
+                    <td><button class="kick-button" data-username="${username}" ${player.status !== 'online' ? 'disabled' : ''}>เตะ</button></td>
                 `;
                 playerTable.appendChild(tr);
             });
 
+            totalPlayersCountEl.innerText = `👥 ผู้เล่นทั้งหมด: ${playersData.length}`;
             totalCashEl.innerText = `💰 เงินรวมทั้งหมด: ${totalCash.toLocaleString()}`;
             totalMoneyEl.innerText = `💵 คิดเป็นบาท: ${formatMoney(totalCash)}`;
-            onlineCountEl.innerText = `🟢 ออนไลน์: ${online}`;
-            offlineCountEl.innerText = `🔴 ออฟไลน์: ${offline}`;
+            onlineCountEl.innerText = `🟢 ออนไลน์: ${onlineCount}`;
+            offlineCountEl.innerText = `🔴 ออฟไลน์: ${offlineCount}`;
+            farmingCountEl.innerText = `🎣 กำลังฟาร์ม: ${farmingCount}`;
+            notFarmingCountEl.innerText = `🛋️ ไม่ฟาร์ม: ${notFarmingCount}`;
+
+            console.log(`[SUMMARY] ออนไลน์: ${onlineCount}, ออฟไลน์: ${offlineCount}, กำลังฟาร์ม: ${farmingCount}, ไม่ฟาร์ม: ${notFarmingCount}`);
+
 
             updateDeleteButtonState();
             updateSelectAllState();
             addCheckboxListeners();
-            addDragAndDropListeners();
-            checkPlayerStatusOnline();
+            addKickButtonListeners();
         }
 
-        async function updatePlayerStatus(username, status) {
-            console.log(`ℹ️ กำลังอัปเดตสถานะผู้เล่น ${username} เป็น ${status}...`);
-            try {
-                const res = await fetch(`${supabaseUrl}/rest/v1/players?username=eq.${encodeURIComponent(username)}`, {
-                    method: "PATCH",
-                    headers,
-                    body: JSON.stringify({ status: status }),
-                });
-                if (!res.ok) {
-                    const errorText = await res.text();
-                    throw new Error(`Error: ${res.status} ${res.statusText} - ${errorText}`);
-                }
-                console.log(`✅ อัปเดตสถานะ ${username} เป็น ${status} สำเร็จ`);
-                await fetchPlayers();
-            } catch (error) {
-                console.error(`❌ อัปเดตสถานะ ${username} ล้มเหลว:`, error);
-                showCustomAlert(`อัปเดตสถานะ ${username} ล้มเหลว: ${error.message}`, 8000);
-            }
-        }
-
-        function checkPlayerStatusOnline() {
-            const now = new Date();
-            console.log("⏱️ กำลังตรวจสอบสถานะผู้เล่นที่ออนไลน์...");
-
-            playersData.forEach(player => {
-                const username = player.username;
-                const lastOnlineStr = player.last_online;
-                const status = player.status;
-
-                if (status === "online" && lastOnlineStr) {
-                    const lastOnlineTime = new Date(lastOnlineStr);
-                    const diffSeconds = (now.getTime() - lastOnlineTime.getTime()) / 1000;
-
-                    console.log(`Debug: ผู้เล่น ${username} | สถานะ: ${status} | last_online: ${lastOnlineStr} | เวลาผ่านไป: ${diffSeconds.toFixed(2)} วินาที`);
-
-                    if (diffSeconds > 30) {
-                        console.warn(`🚨 ผู้เล่น ${username} ไม่ส่งข้อมูลครบ 30 วินาที! กำลังเปลี่ยนสถานะเป็น offline...`);
-                        updatePlayerStatus(username, "offline");
+        async function sendKickSignal(username) {
+            console.log(`[ACTION] เตรียมส่งสัญญาณเตะผู้เล่น ${username}`);
+            showConfirmModal(
+                "ยืนยันการเตะผู้เล่น",
+                `คุณต้องการเตะผู้เล่น **${username}** ออกจากเกมหรือไม่?`,
+                async (confirmed) => {
+                    if (!confirmed) {
+                        showCustomAlert("การเตะถูกยกเลิก");
+                        return;
                     }
-                } else if (status === "online" && !lastOnlineStr) {
-                    console.warn(`⚠️ ผู้เล่น ${username} สถานะออนไลน์แต่ไม่มี last_online. กำลังเปลี่ยนสถานะเป็น offline...`);
-                    updatePlayerStatus(username, "offline");
+
+                    console.log(`🦶 กำลังส่งสัญญาณเตะผู้เล่น ${username}...`);
+                    try {
+                        await updatePlayerSupabase(username, { kick_player: true });
+                        showCustomAlert(`✅ ส่งสัญญาณเตะ ${username} สำเร็จ!`);
+                    } catch (error) {
+                        showCustomAlert(`ส่งสัญญาณเตะ ${username} ล้มเหลว: ${error.message}`, 8000);
+                    }
                 }
+            );
+        }
+
+        function addKickButtonListeners() {
+            document.querySelectorAll(".kick-button").forEach(button => {
+                button.removeEventListener("click", handleKickButtonClick); // Prevent duplicate listeners
+                button.addEventListener("click", handleKickButtonClick);
             });
+        }
+
+        function handleKickButtonClick(event) {
+            const usernameToKick = event.currentTarget.dataset.username;
+            console.log(`[EVENT] ปุ่มเตะถูกกดสำหรับ ${usernameToKick}`);
+            sendKickSignal(usernameToKick);
         }
 
         function updateDeleteButtonState() {
             const anyChecked = !!document.querySelector(".row-checkbox:checked");
             deleteBtn.disabled = !anyChecked;
-            console.log(`Debug: ปุ่มลบสถานะ: ${deleteBtn.disabled ? 'Disabled' : 'Enabled'}`);
+            // console.log(`[DEBUG] ปุ่มลบสถานะ: ${deleteBtn.disabled ? 'Disabled' : 'Enabled'}`); // Can uncomment for very verbose debug
         }
 
         function updateSelectAllState() {
             const checkboxes = document.querySelectorAll(".row-checkbox");
             const checkedBoxes = document.querySelectorAll(".row-checkbox:checked");
-            selectAllCheckbox.checked = checkboxes.length > 0 && checkboxes.length === checkedBoxes.length;
+            selectAllCheckbox.checked = checkboxes.length > 0 && checkedBoxes.length === checkboxes.length;
             selectAllCheckbox.indeterminate = checkedBoxes.length > 0 && checkedBoxes.length < checkboxes.length;
         }
 
         function addCheckboxListeners() {
-            const checkboxes = document.querySelectorAll(".row-checkbox");
-            checkboxes.forEach(cb => {
-                cb.onchange = () => {
+            document.querySelectorAll(".row-checkbox").forEach(checkbox => {
+                checkbox.removeEventListener("change", updateDeleteButtonState);
+                checkbox.addEventListener("change", () => {
                     updateDeleteButtonState();
                     updateSelectAllState();
-                };
+                });
             });
         }
 
-        statusFilter.onchange = () => {
-            currentFilter = statusFilter.value;
-            renderPlayers();
-        };
-
-        sortCashSelect.onchange = () => {
-            currentSort = sortCashSelect.value;
-            renderPlayers();
-        };
-
-        selectAllCheckbox.onchange = () => {
-            const checkboxes = document.querySelectorAll(".row-checkbox");
-            checkboxes.forEach(cb => {
-                cb.checked = selectAllCheckbox.checked;
+        selectAllCheckbox.addEventListener("change", () => {
+            console.log(`[EVENT] เลือกทั้งหมด: ${selectAllCheckbox.checked}`);
+            const isChecked = selectAllCheckbox.checked;
+            document.querySelectorAll(".row-checkbox").forEach(checkbox => {
+                checkbox.checked = isChecked;
             });
             updateDeleteButtonState();
-            updateSelectAllState();
-        };
+        });
 
-        async function performDelete(checkedBoxes) {
-            console.log(`🗑️ กำลังเริ่มต้นลบผู้เล่นที่เลือก ${checkedBoxes.length} คน...`);
-            let successCount = 0;
-            let failedUsers = [];
 
-            for (const cb of checkedBoxes) {
-                const username = cb.getAttribute("data-username");
-                console.log(`⚙️ กำลังพยายามลบผู้เล่น: ${username}`);
-                try {
-                    const res = await fetch(`${supabaseUrl}/rest/v1/players?username=eq.${encodeURIComponent(username)}`, {
-                        method: "DELETE",
-                        headers,
-                    });
+        deleteBtn.addEventListener("click", () => {
+            const selectedUsernames = Array.from(document.querySelectorAll(".row-checkbox:checked"))
+                                                .map(cb => cb.dataset.username);
 
-                    if (res.status === 204) {
-                        console.log(`✅ ลบผู้เล่น ${username} สำเร็จ`);
-                        successCount++;
-                    } else {
-                        const errorText = await res.text();
-                        const errorMessage = errorText || `สถานะ: ${res.status} ${res.statusText}`;
-                        console.error(`❌ ลบผู้เล่น ${username} ล้มเหลว: ${errorMessage}. ตรวจสอบ Supabase RLS/สิทธิ์`, res);
-                        failedUsers.push(`${username} (ข้อผิดพลาด: ${errorMessage})`);
-                    }
-                } catch (error) {
-                    console.error(`❌ ลบผู้เล่น ${username} ล้มเหลว (Network/Fetch Error):`, error);
-                    failedUsers.push(`${username} (ข้อผิดพลาดเครือข่าย: ${error.message})`);
-                }
-            }
-
-            let message = "";
-            if (failedUsers.length === 0) {
-                message = `✅ ลบผู้เล่นสำเร็จ: ${successCount} คน`;
-            } else {
-                message = `⚠️ ลบผู้เล่นสำเร็จ ${successCount} คน\nลบไม่สำเร็จ ${failedUsers.length} คน:\n- ${failedUsers.join("\n- ")}\n\nโปรดตรวจสอบสิทธิ์ (RLS) ใน Supabase Dashboard`;
-            }
-            showCustomAlert(message, 7000);
-
-            console.log("ℹ️ ดำเนินการลบเสร็จสิ้น กำลังดึงข้อมูลล่าสุด...");
-            await fetchPlayers();
-        }
-
-        deleteBtn.onclick = () => {
-            const checkedBoxes = [...document.querySelectorAll(".row-checkbox:checked")];
-            if (checkedBoxes.length === 0) {
-                showCustomAlert("กรุณาเลือกผู้เล่นก่อนลบ", 3000);
+            if (selectedUsernames.length === 0) {
+                showCustomAlert("กรุณาเลือกผู้เล่นที่ต้องการลบ");
+                console.warn("[ACTION] พยายามลบแต่ไม่มีผู้เล่นถูกเลือก");
                 return;
             }
 
-            const playerCount = checkedBoxes.length;
-            const message = `คุณต้องการลบผู้เล่น **${playerCount}** คนหรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้`;
+            console.log(`[ACTION] เตรียมลบผู้เล่น ${selectedUsernames.length} คน: ${selectedUsernames.join(", ")}`);
+            showConfirmModal(
+                "ยืนยันการลบข้อมูล",
+                `คุณต้องการลบผู้เล่น **${selectedUsernames.length}** คนหรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้`,
+                async (confirmed) => {
+                    if (confirmed) {
+                        console.log(`🗑️ กำลังดำเนินการลบผู้เล่น: ${selectedUsernames.join(", ")}`);
+                        try {
+                            const deletePromises = selectedUsernames.map(username =>
+                                fetch(`${supabaseUrl}/rest/v1/players?username=eq.${encodeURIComponent(username)}`, {
+                                    method: "DELETE",
+                                    headers,
+                                })
+                            );
+                            const responses = await Promise.all(deletePromises);
 
-            showConfirmModal("ยืนยันการลบข้อมูล", message, (confirmed) => {
-                if (confirmed) {
-                    performDelete(checkedBoxes);
-                } else {
-                    console.log("ℹ️ ผู้ใช้ยกเลิกการลบ.");
+                            const failedDeletions = responses.filter(res => !res.ok);
+                            if (failedDeletions.length > 0) {
+                                throw new Error(`${failedDeletions.length} รายการลบไม่สำเร็จ`);
+                            }
+
+                            showCustomAlert(`✅ ลบผู้เล่น ${selectedUsernames.length} คนสำเร็จ!`);
+                            console.log(`✅ ลบผู้เล่น ${selectedUsernames.length} คนสำเร็จ.`);
+                            fetchPlayers(); // Re-fetch to update the table
+                        } catch (error) {
+                            console.error("❌ การลบล้มเหลว:", error);
+                            showCustomAlert(`การลบล้มเหลว: ${error.message}`, 8000);
+                        }
+                    } else {
+                        showCustomAlert("การลบถูกยกเลิก");
+                        console.log("[ACTION] การลบถูกยกเลิกโดยผู้ใช้");
+                    }
                 }
-            });
-        };
+            );
+        });
 
-        // --- Drag & Drop ---
+        // Event listener for the new refresh button
+        refreshBtn.addEventListener("click", () => {
+            console.log("[ACTION] ปุ่มรีเฟรชถูกกด");
+            fetchPlayers();
+            showCustomAlert("ข้อมูลถูกรีเฟรชแล้ว!");
+        });
 
-        let draggedRow = null;
+        statusFilter.addEventListener("change", (event) => {
+            currentFilter = event.target.value;
+            console.log(`[FILTER] เปลี่ยนตัวกรองสถานะเป็น: ${currentFilter}`);
+            processAndRenderPlayers();
+        });
 
-        function addDragAndDropListeners() {
-            const rows = playerTable.querySelectorAll("tr");
-            rows.forEach(row => {
-                row.removeEventListener("dragstart", onDragStart);
-                row.removeEventListener("dragover", onDragOver);
-                row.removeEventListener("drop", onDrop);
-                row.removeEventListener("dragend", onDragEnd);
+        sortCashSelect.addEventListener("change", (event) => {
+            currentSort = event.target.value;
+            console.log(`[SORT] เปลี่ยนการเรียงเงินเป็น: ${currentSort}`);
+            processAndRenderPlayers();
+        });
 
-                row.addEventListener("dragstart", onDragStart);
-                row.addEventListener("dragover", onDragOver);
-                row.addEventListener("drop", onDrop);
-                row.addEventListener("dragend", onDragEnd);
-            });
-        }
 
-        function onDragStart(e) {
-            draggedRow = e.currentTarget;
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', null);
-            draggedRow.classList.add("dragging");
-            console.log(`ℹ️ เริ่มลาก: ${draggedRow.dataset.username}`);
-        }
-
-        function onDragOver(e) {
-            e.preventDefault();
-            const target = e.currentTarget;
-            if (target === draggedRow) return;
-
-            playerTable.querySelectorAll("tr").forEach(tr => {
-                tr.classList.remove("drag-over");
-                tr.style.borderTop = "";
-                tr.style.borderBottom = "";
-            });
-
-            const bounding = target.getBoundingClientRect();
-            const offset = e.clientY - bounding.top;
-
-            if (offset < bounding.height / 2) {
-                target.classList.add("drag-over");
-                target.style.borderTop = "3px solid #3498db";
-            } else {
-                target.classList.add("drag-over");
-                target.style.borderBottom = "3px solid #3498db";
-            }
-        }
-
-        function onDrop(e) {
-            e.preventDefault();
-            const target = e.currentTarget;
-            if (target === draggedRow) return;
-
-            const bounding = target.getBoundingClientRect();
-            const offset = e.clientY - bounding.top;
-
-            playerTable.querySelectorAll("tr").forEach(tr => {
-                tr.classList.remove("drag-over");
-                tr.style.borderTop = "";
-                tr.style.borderBottom = "";
-            });
-
-            if (offset < bounding.height / 2) {
-                playerTable.insertBefore(draggedRow, target);
-            } else {
-                playerTable.insertBefore(draggedRow, target.nextSibling);
-            }
-            updateRowNumbers();
-            console.log(`✅ วางสำเร็จ: ${draggedRow.dataset.username} ย้ายไปที่ตำแหน่งใหม่`);
-        }
-
-        function onDragEnd(e) {
-            draggedRow.classList.remove("dragging");
-            playerTable.querySelectorAll("tr").forEach(tr => {
-                tr.classList.remove("drag-over");
-                tr.style.borderTop = "";
-                tr.style.borderBottom = "";
-            });
-            draggedRow = null;
-            console.log("ℹ️ สิ้นสุดการลาก");
-        }
-
-        function updateRowNumbers() {
-            const rows = playerTable.querySelectorAll("tr");
-            rows.forEach((row, i) => {
-                row.querySelector("td:first-child").textContent = i + 1;
-            });
-        }
-
-        // --- Initial fetch and interval ---
+        // Initial fetch and periodic updates
         fetchPlayers();
-        setInterval(fetchPlayers, 10000); // ดึงข้อมูลทุก 10 วินาที
-    </script>
+        // Set an interval to fetch and update data every 30 seconds
+        setInterval(fetchPlayers, 30000); // Calls fetchPlayers() which then calls processAndRenderPlayers()
 
+    </script>
 </body>
 </html>
