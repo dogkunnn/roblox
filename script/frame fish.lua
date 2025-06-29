@@ -298,6 +298,11 @@ local function mainLoop()
                 end
             end
             task.wait(4) -- Wait 4 seconds after selling
+
+            -- Added walkTo calls after selling
+            walkTo(Vector3.new(2792.81, 14.23, 1902.52))
+            walkTo(Vector3.new(2809.54, 14.23, 1794.68))
+
             startFishingAtRandomSpot()
         end
 
