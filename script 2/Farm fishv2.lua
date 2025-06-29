@@ -170,10 +170,10 @@ local function startFishing()
 end
 
 local fishingSpots = {
-   Vector3.new(3035.84, 6.19, 1614.85),
-   Vector3.new(3022.35, 5.78, 1620.28),
-   Vector3.new(3065.29, 6.08, 1632.97),
-   Vector3.new(3010.83, 5.77, 1627.09)
+    Vector3.new(3035.84, 6.19, 1614.85),
+    Vector3.new(3022.35, 5.78, 1620.28),
+    Vector3.new(3065.29, 6.08, 1632.97),
+    Vector3.new(3010.83, 5.77, 1627.09)
 }
 
 local function getRandomFishingSpot()
@@ -299,6 +299,12 @@ local function mainLoop()
                 end
             end
             task.wait(4) -- รอ 4 วินาทีหลังขาย
+
+            -- เพิ่มจุดเดินใหม่หลังจากขายเสร็จ
+            walkTo(Vector3.new(2843.12, 14.37, 1993.33))
+            walkTo(Vector3.new(2967.07, 14.37, 1796.68))
+            walkTo(Vector3.new(3085.42, 13.75, 1742.42))
+            
             startFishingAtRandomSpot()
         end
 
