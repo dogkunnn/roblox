@@ -2,63 +2,43 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local LocalPlayer = Players.LocalPlayer
 local Network = require(ReplicatedStorage:WaitForChild("Modules"):WaitForChild("NetworkFramework"))
-local UserInputService = game:GetService("UserInputService") 
+local UserInputService = game:GetService("UserInputService") -- Added for completeness, though not explicitly used in main logic
 
 math.randomseed(tick())
 math.random(); math.random(); math.random()
 
-local notify
-local playerGui -- ประกาศตัวแปร playerGui ที่ Global Scope เพื่อให้เข้าถึงได้ทั่วถึง
-
--- ตรวจสอบและตั้งค่า playerGui และ statusGui ทุกครั้งที่ CharacterAdded
-local function initializePlayerUIReferences()
-    -- รอ PlayerGui โหลดให้แน่ใจว่ามันพร้อมใช้งาน
-    playerGui = LocalPlayer:WaitForChild("PlayerGui")
-    -- อัปเดต statusGui ด้วย, เพราะ PlayerGui อาจถูกสร้างใหม่
-    statusGui = playerGui:WaitForChild("Status"):WaitForChild("Main"):WaitForChild("Status")
-end
-
 --- ระบบแจ้งเตือน (Notification System)
 local function createNotifySystem()
-    -- ตรวจสอบว่า playerGui ถูกกำหนดค่าแล้ว
-    if not playerGui then
-        initializePlayerUIReferences()
-    end
-
-    -- ตรวจสอบและทำลาย ScreenGui เก่าถ้ามี เพื่อป้องกันการซ้ำซ้อนเมื่อสคริปต์รันซ้ำ
-    if playerGui:FindFirstChild("DebugNotifySystem") then
-        playerGui.DebugNotifySystem:Destroy()
-    end
-
+    local playerGui = LocalPlayer:WaitForChild("PlayerGui")
     local screenGui = Instance.new("ScreenGui")
     screenGui.Name = "DebugNotifySystem"
-    screenGui.DisplayOrder = 999 
+    screenGui.DisplayOrder = 999 -- ทำให้แน่ใจว่าอยู่บนสุดของ UI อื่นๆ
     screenGui.Parent = playerGui
 
     local frame = Instance.new("Frame")
     frame.Name = "NotifyFrame"
     frame.Size = UDim2.new(0.25, 0, 0.3, 0)
-    frame.Position = UDim2.new(0.74, 0, 0.69, 0) 
-    frame.AnchorPoint = Vector2.new(0, 1) 
+    frame.Position = UDim2.new(0.74, 0, 0.69, 0) -- ตำแหน่งมุมขวาล่าง, มีระยะห่างเล็กน้อย
+    frame.AnchorPoint = Vector2.new(0, 1) -- จุดยึดที่มุมล่างซ้ายของเฟรมเอง
     frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
     frame.BackgroundTransparency = 0.8
     frame.BorderSizePixel = 0
-    frame.ClipsDescendants = true 
+    frame.ClipsDescendants = true -- สำคัญสำหรับการแสดงผลแบบเลื่อนขึ้น
     frame.Parent = screenGui
 
     local uiListLayout = Instance.new("UIListLayout")
     uiListLayout.Name = "MessageLayout"
     uiListLayout.FillDirection = Enum.FillDirection.Vertical
     uiListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
-    uiListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom 
+    uiListLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom -- ข้อความใหม่จะปรากฏเหนือข้อความเก่า
     uiListLayout.SortOrder = Enum.SortOrder.LayoutOrder
     uiListLayout.Padding = UDim.new(0, 5)
     uiListLayout.Parent = frame
 
     local messages = {}
-    local maxMessages = 10 
+    local maxMessages = 10 -- จำนวนข้อความสูงสุดที่จะแสดง
 
-    local function notifyFunc(message, color)
+    local function notify(message, color)
         -- ล้างข้อความเก่าหากมีจำนวนเกินกำหนด
         while #messages >= maxMessages do
             local oldestMessage = table.remove(messages, 1)
@@ -71,7 +51,7 @@ local function createNotifySystem()
         textLabel.Text = message
         textLabel.TextColor3 = color or Color3.fromRGB(255, 255, 255)
         textLabel.BackgroundTransparency = 1
-        textLabel.Size = UDim2.new(1, 0, 0, 20) 
+        textLabel.Size = UDim2.new(1, 0, 0, 20) -- ปรับขนาดแนวตั้งอัตโนมัติด้วย UIListLayout
         textLabel.TextXAlignment = Enum.TextXAlignment.Left
         textLabel.Font = Enum.Font.SourceSans
         textLabel.TextSize = 14
@@ -99,11 +79,10 @@ local function createNotifySystem()
         end)
     end
 
-    return notifyFunc
+    return notify
 end
 
--- เรียกใช้ครั้งแรกเพื่อสร้าง Notification System
-notify = createNotifySystem()
+local notify = createNotifySystem()
 
 --- ฟังก์ชันหลัก (Core Functions)
 local function fireRemote(action, item, amount)
@@ -115,22 +94,23 @@ local function fireRemote(action, item, amount)
     end
 end
 
-local function noclipCharacter(character) -- รับ Character เป็นอาร์กิวเมนต์
-    if not character then return end
-    for _, part in pairs(character:GetDescendants()) do
-        if part:IsA("BasePart") then
-            local lowerName = part.Name:lower()
-            -- ตรวจสอบว่าเป็นพื้นหรือต่ำกว่าระดับ Y ที่กำหนด เพื่อป้องกันการ noclip พื้น
-            local isGround = lowerName:find("ground") or lowerName:find("floor") or part.Position.Y < 5
-            if not isGround then
-                part.CanCollide = false
+local function noclipCharacter()
+    local char = LocalPlayer.Character
+    if char then
+        for _, part in pairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                local lowerName = part.Name:lower()
+                -- ตรวจสอบว่าเป็นพื้นหรือต่ำกว่าระดับ Y ที่กำหนด เพื่อป้องกันการ noclip พื้น
+                local isGround = lowerName:find("ground") or lowerName:find("floor") or part.Position.Y < 5
+                if not isGround then
+                    part.CanCollide = false
+                end
             end
         end
     end
 end
 
 local function walkTo(pos)
-    -- ดึง Character, Humanoid, และ HumanoidRootPart ล่าสุดในขณะที่เรียกใช้
     local character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
     local human = character:WaitForChild("Humanoid")
     local root = character:WaitForChild("HumanoidRootPart")
@@ -138,15 +118,9 @@ local function walkTo(pos)
     human.WalkSpeed = 30
     human:MoveTo(pos)
     notify("กำลังเดินไปที่: " .. tostring(pos), Color3.fromRGB(255, 255, 100))
-    
     -- เดินต่อไปจนกว่าจะถึงเป้าหมาย
     while (root.Position - pos).Magnitude > 4 do
-        -- ตรวจสอบว่า character ยังคงมีอยู่และยังไม่ถูกทำลาย
-        if not LocalPlayer.Character or LocalPlayer.Character ~= character then
-            notify("ตัวละครถูกทำลายหรือเปลี่ยนไปแล้วระหว่างการเดินทาง", Color3.fromRGB(255, 50, 50))
-            return false -- หยุดการเดินทาง
-        end
-        noclipCharacter(character) -- ส่ง Character ปัจจุบันไป noclip
+        noclipCharacter() -- ใช้ noclip ระหว่างการเคลื่อนที่เพื่อการเดินทางที่ราบรื่น
         human:MoveTo(pos)
         task.wait(0.2)
     end
@@ -174,14 +148,10 @@ local fishList = {
 }
 
 local baitPath = { "Inventory", "CanvasGroup", "Main", "Body", "Bait", "Main", "Amount" }
-local statusGui -- ประกาศตัวแปร statusGui ที่ Global Scope
-
+local playerGui = LocalPlayer:WaitForChild("PlayerGui")
+local statusGui = playerGui:WaitForChild("Status"):WaitForChild("Main"):WaitForChild("Status")
 
 local function findPath(pathTable)
-    -- ตรวจสอบว่า playerGui ถูกกำหนดค่าแล้ว
-    if not playerGui then
-        initializePlayerUIReferences()
-    end
     local current = playerGui
     for _, name in ipairs(pathTable) do
         current = current and current:FindFirstChild(name)
@@ -190,23 +160,20 @@ local function findPath(pathTable)
 end
 
 local function startFishing()
-    local character = LocalPlayer.Character -- ดึง Character ล่าสุด
-    if not character then return end -- หากไม่มี Character ก็หยุด
-
-    local rod = character:FindFirstChild("Fishingrod")
+    local rod = workspace:FindFirstChild("Character") and workspace.Character:FindFirstChild(LocalPlayer.Name) and workspace.Character[LocalPlayer.Name]:FindFirstChild("Fishingrod")
     if not rod then
         fireRemote("Use Tool", "Fishingrod")
     end
-    task.wait(1)
+    wait(1)
     Network.fireServer("AutoFishing")
     notify("เริ่มตกปลาอัตโนมัติแล้ว.", Color3.fromRGB(150, 200, 255))
 end
 
 local fishingSpots = {
-    Vector3.new(3035.84, 6.19, 1614.85),
-    Vector3.new(3022.35, 5.78, 1620.28),
-    Vector3.new(3065.29, 6.08, 1632.97),
-    Vector3.new(3010.83, 5.77, 1627.09)
+   Vector3.new(3035.84, 6.19, 1614.85),
+   Vector3.new(3022.35, 5.78, 1620.28),
+   Vector3.new(3065.29, 6.08, 1632.97),
+   Vector3.new(3010.83, 5.77, 1627.09)
 }
 
 local function getRandomFishingSpot()
@@ -244,10 +211,6 @@ end
 local function mainLoop()
     notify("เริ่มการทำงานสคริปต์.", Color3.fromRGB(200, 200, 255))
 
-    -- เรียก initializePlayerUIReferences ทันทีเมื่อ mainLoop เริ่มต้น
-    -- เพื่อให้แน่ใจว่า playerGui และ statusGui ถูกตั้งค่าอย่างถูกต้อง
-    initializePlayerUIReferences()
-
     -- การตั้งค่าเริ่มต้น
     walkTo(Vector3.new(3045.39, 13.36, 1670.62))
     task.wait(1)
@@ -259,21 +222,13 @@ local function mainLoop()
     while true do
         task.wait(1)
 
-        -- ดึง Character ล่าสุดในแต่ละรอบ
-        local currentCharacter = LocalPlayer.Character
-        if not currentCharacter or not currentCharacter:FindFirstChild("HumanoidRootPart") or not currentCharacter:FindFirstChild("Humanoid") then
-            -- ถ้าตัวละครไม่พร้อม (เช่น ตายหรือกำลังเกิดใหม่) ให้รอ
-            notify("รอตัวละครเกิดใหม่...", Color3.fromRGB(255, 200, 100))
-            LocalPlayer.CharacterAdded:Wait()
-            continue -- ข้ามรอบนี้ไปก่อน
-        end
-
         -- ตรวจสอบเฟรม AutoFarmFishing.CanvasGroup.Frame พร้อม Timeout
         local autoFarmFrame = playerGui:FindFirstChild("AutoFarmFishing")
             and playerGui.AutoFarmFishing:FindFirstChild("CanvasGroup")
             and playerGui.AutoFarmFishing.CanvasGroup:FindFirstChild("Frame")
 
         if autoFarmFrame then
+            -- รีเซ็ตตัวจับเวลาหากพบเฟรม เพราะปัญหาได้รับการแก้ไขแล้ว
             startTime = tick()
         else
             local elapsedTime = tick() - startTime
@@ -286,25 +241,18 @@ local function mainLoop()
 
         -- ตรวจสอบให้แน่ใจว่าได้สวมใส่เบ็ดตกปลา
         task.spawn(function()
-            local rod = currentCharacter:FindFirstChild("Fishingrod")
+            local rod = workspace:FindFirstChild("Character") and workspace.Character:FindFirstChild(LocalPlayer.Name) and workspace.Character[LocalPlayer.Name]:FindFirstChild("Fishingrod")
             if not rod then
                 fireRemote("Use Tool", "Fishingrod")
             end
         end)
 
         -- ตรวจสอบความหิวและกระหาย
-        -- ตรวจสอบว่า statusGui ยังมีอยู่และ Bar มีอยู่ก่อนเข้าถึง
-        if statusGui and statusGui:FindFirstChild("Hunger") and statusGui.Hunger:FindFirstChild("Bar") and
-           statusGui:FindFirstChild("Thirsty") and statusGui.Thirsty:FindFirstChild("Bar") then
-            local hunger = statusGui.Hunger.Bar.Size.Y.Scale
-            local thirst = statusGui.Thirsty.Bar.Size.Y.Scale
+        local hunger = statusGui:WaitForChild("Hunger"):WaitForChild("Bar").Size.Y.Scale
+        local thirst = statusGui:WaitForChild("Thirsty"):WaitForChild("Bar").Size.Y.Scale
 
-            if hunger < 0.2 then fireRemote("Use Item", "Bread", 1) end
-            if thirst < 0.2 then fireRemote("Use Item", "Water", 1) end
-        else
-            notify("ไม่พบ UI สถานะความหิว/กระหาย กำลังพยายามค้นหาใหม่...", Color3.fromRGB(255, 150, 50))
-            initializePlayerUIReferences() -- พยายามรีเฟรชการอ้างอิง UI
-        end
+        if hunger < 0.2 then fireRemote("Use Item", "Bread", 1) end
+        if thirst < 0.2 then fireRemote("Use Item", "Water", 1) end
 
         -- แสดงรายการในกระเป๋าทุกๆ 10 วินาที
         if tick() - lastDisplayTime >= 10 then
@@ -332,25 +280,25 @@ local function mainLoop()
             local cur, max = getAmountFromText(obj)
             if cur and max and cur >= max then
                 full = true
-                break 
+                break -- ไม่จำเป็นต้องตรวจสอบรายการอื่นถ้ามีรายการใดรายการหนึ่งเต็มแล้ว
             end
         end
 
         if full then
             notify("ช่องเก็บของเต็ม! กำลังขายปลาทั้งหมด...", Color3.fromRGB(255, 100, 100))
-            walkTo(Vector3.new(3026.53, 12.95, 1703.87)) 
-            walkTo(Vector3.new(2815.85, 14.14, 1839.71)) 
-            walkTo(Vector3.new(2840.77, 14.14, 2082.19)) 
+            walkTo(Vector3.new(3026.53, 12.95, 1703.87)) -- จุดเดินไปขายปลาจุดแรก
+            walkTo(Vector3.new(2815.85, 14.14, 1839.71)) -- จุดเดินไปขายปลาจุดที่สอง
+            walkTo(Vector3.new(2840.77, 14.14, 2082.19)) -- จุดขายปลาจริง
             for name, path in pairs(fishList) do
                 local obj = findPath(path)
                 local amount = getAmountFromText(obj)
                 if amount and amount > 0 then
                     fireRemote("Economy", name, amount)
                     notify("ขาย " .. name .. " x" .. amount, Color3.fromRGB(150, 255, 150))
-                    task.wait(0.1) 
+                    task.wait(0.1) -- หน่วงเวลาเล็กน้อยระหว่างการขาย
                 end
             end
-            task.wait(4) 
+            task.wait(4) -- รอ 4 วินาทีหลังขาย
             startFishingAtRandomSpot()
         end
 
@@ -361,7 +309,7 @@ local function mainLoop()
         if (not bait or bait <= 4) then
             notify("เหยื่อไม่พบหรือเหลือน้อย. กำลังซื้อเพิ่ม...", Color3.fromRGB(255, 100, 100))
             restockItems()
-            task.wait(4) 
+            task.wait(4) -- รอ 4 วินาทีก่อนกลับไปตกปลา
             startFishingAtRandomSpot()
         end
     end
@@ -369,20 +317,5 @@ local function mainLoop()
     mainLoop()
 end
 
--- เพิ่ม Listener สำหรับ CharacterAdded เพื่อให้สคริปต์เริ่มต้นใหม่เมื่อตัวละครเกิด
-LocalPlayer.CharacterAdded:Connect(function(character)
-    -- รอให้ PlayerGui พร้อมก่อนที่จะสร้าง notify system หรืออ้างอิง UI อื่นๆ
-    initializePlayerUIReferences()
-    notify = createNotifySystem() -- สร้างระบบแจ้งเตือนใหม่สำหรับ PlayerGui ใหม่
-    
-    -- หน่วงเวลาเล็กน้อยเพื่อให้ UI โหลดเต็มที่
-    task.wait(2) 
-    -- หลังจากตัวละครเกิดใหม่และ UI พร้อม ให้เริ่ม mainLoop ใหม่
-    -- ตรวจสอบว่า mainLoop ไม่ได้กำลังทำงานอยู่แล้ว
-    -- (ในกรณี Executor มันจะรัน mainLoop อีกครั้ง ซึ่งอาจจะซ้อนกัน)
-    -- แต่ในบริบทของ Executor การเรียก mainLoop() ซ้ำๆ หลัง CharacterAdded มักจะเหมาะสม
-    task.spawn(mainLoop)
-end)
-
--- เรียก mainLoop ครั้งแรกเมื่อสคริปต์ถูกฉีด
-task.spawn(mainLoop)
+-- เริ่มเรียกฟังก์ชัน mainLoop
+mainLoop()
