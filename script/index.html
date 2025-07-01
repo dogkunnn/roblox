@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางสถานะผู้เล่นแบบเรียลไทม์</title>
     <style>
-        /* Base Styles */
         body {
             font-family: "Sarabun", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             background: #f7f9fc;
@@ -16,7 +15,6 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            box-sizing: border-box; /* Ensures padding doesn't add to total width/height */
         }
 
         h1 {
@@ -25,18 +23,14 @@
             color: #2c3e50;
             text-align: center;
             user-select: none;
-            font-size: 2.2rem; /* Default for larger screens */
         }
 
-        /* Summary Boxes */
         .summary {
             display: flex;
             gap: 24px;
             margin-bottom: 25px;
-            flex-wrap: wrap; /* Allows boxes to wrap to next line on smaller screens */
+            flex-wrap: wrap;
             justify-content: center;
-            width: 100%; /* Ensure it takes full width to justify content */
-            max-width: 900px;
         }
         .box {
             background: white;
@@ -44,7 +38,6 @@
             border-radius: 14px;
             box-shadow: 0 4px 8px rgb(0 0 0 / 0.08);
             min-width: 180px;
-            flex: 1 1 auto; /* Allows boxes to grow and shrink, but prefer 180px */
             font-weight: 600;
             font-size: 1.15rem;
             text-align: center;
@@ -56,21 +49,20 @@
             background-color: #e8f0fe;
         }
 
-        /* Top Controls (Filters & Buttons) */
+        /* ตัวกรองและปุ่มบนสุด */
         .top-controls {
             width: 100%;
             max-width: 900px;
             margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
-            align-items: flex-end; /* Align items to the bottom, useful for labels above selects */
+            align-items: center;
             flex-wrap: wrap;
             gap: 12px;
         }
 
         .filter-container {
-            flex: 1 1 200px; /* Allows filters to grow/shrink, prefers 200px */
-            min-width: 150px; /* Smaller min-width for filters */
+            min-width: 160px;
             user-select: none;
         }
         label {
@@ -101,7 +93,6 @@
             gap: 10px;
             flex-wrap: wrap;
             justify-content: flex-end;
-            flex: 1 1 250px; /* Allows buttons to grow/shrink, prefers 250px */
         }
 
         #delete-selected, #refresh-data {
@@ -132,23 +123,15 @@
             background-color: #27ae60;
         }
 
-        /* Table Container for Horizontal Scrolling */
-        .table-responsive {
-            width: 100%;
-            max-width: 900px;
-            overflow-x: auto; /* Enable horizontal scrolling if content overflows */
-            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgb(0 0 0 / 0.1);
-        }
 
         table {
             border-collapse: collapse;
-            width: 100%; /* Ensure table takes full width of its container */
-            min-width: 700px; /* Minimum width for table to prevent squishing on small screens */
+            width: 100%;
+            max-width: 900px;
             background: white;
-            /* box-shadow is now on .table-responsive */
-            /* border-radius is now on .table-responsive */
+            box-shadow: 0 5px 15px rgb(0 0 0 / 0.1);
+            border-radius: 10px;
+            overflow: hidden;
             user-select: none;
         }
         thead {
@@ -161,7 +144,6 @@
             border-bottom: 1px solid #ddd;
             text-align: center;
             font-size: 1rem;
-            white-space: nowrap; /* Prevent text wrapping in cells, forces horizontal scroll */
         }
         tbody tr:hover {
             background-color: #f1f7ff;
@@ -175,6 +157,7 @@
             color: #c0392b;
             font-weight: 700;
         }
+        /* New styles for farming status */
         .farming {
             color: #f39c12; /* Orange for farming */
             font-weight: 700;
@@ -183,6 +166,7 @@
             color: #555; /* Dark grey for not farming */
             font-weight: 500;
         }
+
 
         input[type="checkbox"] {
             width: 18px;
@@ -212,24 +196,24 @@
             opacity: 1;
         }
 
-        /* Custom Confirmation Modal Styles */
+        /* --- Custom Confirmation Modal Styles --- */
         .custom-modal {
-            display: none;
-            position: fixed;
-            z-index: 1001;
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1001; /* Sit on top of everything */
             left: 0;
             top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0,0,0,0.5);
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
             justify-content: center;
             align-items: center;
-            padding-top: 50px;
+            padding-top: 50px; /* Offset from top */
         }
 
         .custom-modal.show {
-            display: flex;
+            display: flex; /* Show when active */
         }
 
         .modal-content {
@@ -300,9 +284,9 @@
             transform: translateY(-2px);
         }
 
-        /* Kick button style */
+        /* New Kick button style */
         .kick-button {
-            background-color: #3498db;
+            background-color: #3498db; /* Blue */
             color: white;
             border: none;
             padding: 8px 15px;
@@ -322,132 +306,40 @@
         }
 
 
-        /* --- Media Queries for Responsiveness --- */
-
-        /* Tablets and smaller desktops (e.g., 768px to 1024px) */
-        @media (max-width: 1024px) {
-            h1 {
-                font-size: 2rem;
-            }
-            .summary {
-                gap: 15px;
-            }
-            .box {
-                min-width: 150px;
-                padding: 15px 20px;
-                font-size: 1.1rem;
-            }
-            .top-controls {
-                flex-direction: row; /* Keep in row for larger tablets */
-                justify-content: space-around; /* Distribute filters/buttons */
-                align-items: flex-end;
-                gap: 15px;
-            }
-            .filter-container, .action-buttons {
-                flex: 1 1 auto; /* Allow elements to take necessary space */
-            }
-            #delete-selected, #refresh-data {
-                padding: 9px 20px;
-                font-size: 1rem;
-            }
-            th, td {
-                padding: 12px 15px;
-                font-size: 0.95rem;
-            }
-            table {
-                min-width: 650px; /* Slightly reduce min-width */
-            }
-        }
-
-        /* Mobile phones (e.g., 600px and below) */
         @media (max-width: 600px) {
-            body {
-                padding: 10px;
-            }
-            h1 {
-                font-size: 1.8rem;
-                margin-bottom: 20px;
-            }
             .summary {
-                flex-direction: column; /* Stack boxes vertically */
-                gap: 12px;
-                align-items: center; /* Center stacked boxes */
+                flex-direction: column;
+                gap: 15px;
+                align-items: center;
             }
             .box {
                 width: 100%;
-                max-width: 300px; /* Max width for stacked boxes */
-                font-size: 1rem;
-                padding: 12px 18px;
+                max-width: 300px;
             }
             .top-controls {
-                flex-direction: column; /* Stack filters and buttons vertically */
-                align-items: stretch; /* Stretch items to full width */
-                gap: 10px;
-                margin-bottom: 10px;
-            }
-            .filter-container {
-                min-width: unset; /* Remove min-width to allow full stretch */
-                width: 100%;
-            }
-            select {
-                padding: 10px;
-                font-size: 0.95rem;
+                flex-direction: column;
+                align-items: stretch;
             }
             .action-buttons {
-                flex-direction: column; /* Stack buttons vertically */
+                justify-content: center;
                 width: 100%;
-                gap: 8px;
             }
             #delete-selected, #refresh-data {
-                width: 100%; /* Make buttons full width */
-                font-size: 1rem;
-                padding: 12px;
-            }
-
-            .table-responsive {
-                border-radius: 8px;
+                width: 100%;
             }
             table {
-                min-width: 600px; /* Ensure table still has a decent minimum width for scroll */
+                max-width: 100%;
             }
             th, td {
-                padding: 8px 10px;
-                font-size: 0.85rem;
+                padding: 10px 12px; /* Adjust padding for smaller screens */
+                font-size: 0.9rem;
             }
-            /* Adjust specific column widths if necessary for mobile readability */
-            th:nth-child(1), td:nth-child(1) { width: 30px; } /* # */
-            th:nth-child(2), td:nth-child(2) { width: 30px; } /* Checkbox */
-            th:nth-child(3), td:nth-child(3) { min-width: 100px; } /* Username */
-            th:nth-child(9), td:nth-child(9) { width: 60px; } /* Kick button */
-
             .modal-content {
                 padding: 20px;
             }
             .modal-button {
                 padding: 10px 20px;
                 font-size: 1rem;
-            }
-        }
-
-        /* Very Small Screens (e.g., 320px) */
-        @media (max-width: 375px) {
-            h1 {
-                font-size: 1.6rem;
-            }
-            .box {
-                padding: 10px 15px;
-                font-size: 0.9rem;
-            }
-            #delete-selected, #refresh-data {
-                padding: 10px;
-                font-size: 0.9rem;
-            }
-            table {
-                min-width: 500px; /* Further reduce min-width if absolutely necessary */
-            }
-            th, td {
-                padding: 6px 8px;
-                font-size: 0.8rem;
             }
         }
     </style>
@@ -493,25 +385,23 @@
         </div>
     </div>
 
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 40px;">#</th>
-                    <th style="width: 36px;"><input type="checkbox" id="select-all" title="เลือกทั้งหมด" aria-label="เลือกทั้งหมด" /></th>
-                    <th>🧑 Username</th>
-                    <th>💸 Cash</th>
-                    <th>👥 Player Count</th>
-                    <th>📶 Status</th>
-                    <th>🎣 สถานะฟาร์ม</th>
-                    <th>🕒 Last Online</th>
-                    <th>🦶 เตะ!</th>
-                </tr>
-            </thead>
-            <tbody id="player-table">
-            </tbody>
-        </table>
-    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 40px;">#</th>
+                <th style="width: 36px;"><input type="checkbox" id="select-all" title="เลือกทั้งหมด" aria-label="เลือกทั้งหมด" /></th>
+                <th>🧑 Username</th>
+                <th>🖥️ Device ID</th> <th>💸 Cash</th>
+                <th>👥 Player Count</th>
+                <th>📶 Status</th>
+                <th>🎣 สถานะฟาร์ม</th>
+                <th>🕒 Last Online</th>
+                <th>🦶 เตะ!</th>
+            </tr>
+        </thead>
+        <tbody id="player-table">
+        </tbody>
+    </table>
 
     <div id="confirm-modal" class="custom-modal">
         <div class="modal-content">
@@ -607,7 +497,7 @@
          * @param {number} duration ระยะเวลาที่แสดง (มิลลิวินาที)
          */
         function showCustomAlert(message, duration = 5000) {
-            console.log(`[ALERT] ${message}`);
+            console.log(`[ALERT] ${message}`); // Log to console as well
             let alertBox = document.querySelector(".custom-alert");
             if (!alertBox) {
                 alertBox = document.createElement("div");
@@ -693,6 +583,10 @@
                     throw new Error(`Error: ${res.status} ${res.statusText} - ${errorText}`);
                 }
                 console.log(`✅ อัปเดตข้อมูลผู้เล่น ${username} สำเร็จ:`, updates);
+                // After successful update, we can re-process and re-render
+                // to reflect immediate changes if needed, but the periodic fetch
+                // might be enough depending on update frequency.
+                // For 'kick_player' it's usually one-off, so no re-render needed.
             } catch (error) {
                 console.error(`❌ อัปเดตข้อมูลผู้เล่น ${username} ล้มเหลว:`, error);
                 showCustomAlert(`อัปเดตผู้เล่น ${username} ล้มเหลว: ${error.message}`, 8000);
@@ -709,10 +603,13 @@
 
             console.log("🔄 กำลังประมวลผลและแสดงผลข้อมูลผู้เล่น...");
 
+            // First, update statuses in the local playersData based on time
             playersData.forEach(player => {
                 const lastOnlineTime = player.last_online ? new Date(player.last_online) : null;
                 const diffSeconds = lastOnlineTime ? (now.getTime() - lastOnlineTime.getTime()) / 1000 : Infinity;
 
+                // Update online/offline status
+                // A player is offline if last_online is null, or if it's been more than 70 seconds
                 if (!lastOnlineTime || diffSeconds > 70) {
                     if (player.status !== "offline") {
                         console.log(`[STATUS CHANGE] ผู้เล่น ${player.username}: จาก ${player.status} เป็น offline (นานเกิน 70 วินาที)`);
@@ -725,14 +622,20 @@
                     }
                 }
 
+                // Update farming status
+                // A player is not farming if `is_farming` is explicitly false from Roblox,
+                // OR if they are marked as farming but have been offline for > 70 seconds.
                 if (player.is_farming === true && player.status === "offline") {
-                     if (player.is_farming !== false) {
+                     if (player.is_farming !== false) { // Log only if state actually changes
                         console.log(`[FARM STATUS CHANGE] ผู้เล่น ${player.username}: จากกำลังฟาร์มเป็นไม่ฟาร์ม (ผู้เล่นออฟไลน์)`);
-                        player.is_farming = false;
+                        player.is_farming = false; // Player is offline, so cannot be farming
                     }
                 }
+                // If player.is_farming is false from Roblox, we respect that.
+                // If player.is_farming is true and they are online, we respect that.
             });
 
+            // Apply filter and sort for display
             displayedPlayers = playersData.filter(p => {
                 if (currentFilter === "online") return p.status === "online";
                 if (currentFilter === "offline") return p.status === "offline";
@@ -747,12 +650,15 @@
                 displayedPlayers.sort((a, b) => (a.cash || 0) - (b.cash || 0));
             }
 
+
             playerTable.innerHTML = "";
             displayedPlayers.forEach((player, index) => {
                 const username = player.username || "ไม่มีชื่อ";
+                const deviceId = player.device_id || "-"; // NEW: Get device_id
                 const cash = player.cash || 0;
                 const playercount = player.playercount ?? "-";
 
+                // Determine display status based on processed data
                 const statusDisplay = player.status === "online" ? "ออนไลน์" : "ออฟไลน์";
                 const statusClass = player.status === "online" ? "online" : "offline";
 
@@ -778,7 +684,7 @@
                     <td>${index + 1}</td>
                     <td><input type="checkbox" class="row-checkbox" data-username="${username}" aria-label="เลือกผู้เล่น ${username}" /></td>
                     <td>${username}</td>
-                    <td>${cash.toLocaleString()}</td>
+                    <td>${deviceId}</td> <td>${cash.toLocaleString()}</td>
                     <td>${playercount}</td>
                     <td class="${statusClass}">${statusDisplay}</td>
                     <td class="${farmingStatusClass}">${farmingStatusDisplay}</td>
@@ -797,6 +703,7 @@
             notFarmingCountEl.innerText = `🛋️ ไม่ฟาร์ม: ${notFarmingCount}`;
 
             console.log(`[SUMMARY] ออนไลน์: ${onlineCount}, ออฟไลน์: ${offlineCount}, กำลังฟาร์ม: ${farmingCount}, ไม่ฟาร์ม: ${notFarmingCount}`);
+
 
             updateDeleteButtonState();
             updateSelectAllState();
@@ -828,7 +735,7 @@
 
         function addKickButtonListeners() {
             document.querySelectorAll(".kick-button").forEach(button => {
-                button.removeEventListener("click", handleKickButtonClick);
+                button.removeEventListener("click", handleKickButtonClick); // Prevent duplicate listeners
                 button.addEventListener("click", handleKickButtonClick);
             });
         }
@@ -842,6 +749,7 @@
         function updateDeleteButtonState() {
             const anyChecked = !!document.querySelector(".row-checkbox:checked");
             deleteBtn.disabled = !anyChecked;
+            // console.log(`[DEBUG] ปุ่มลบสถานะ: ${deleteBtn.disabled ? 'Disabled' : 'Enabled'}`); // Can uncomment for very verbose debug
         }
 
         function updateSelectAllState() {
@@ -917,6 +825,7 @@
             );
         });
 
+        // Event listener for the new refresh button
         refreshBtn.addEventListener("click", () => {
             console.log("[ACTION] ปุ่มรีเฟรชถูกกด");
             fetchPlayers();
@@ -938,7 +847,8 @@
 
         // Initial fetch and periodic updates
         fetchPlayers();
-        setInterval(fetchPlayers, 30000);
+        // Set an interval to fetch and update data every 30 seconds
+        setInterval(fetchPlayers, 30000); // Calls fetchPlayers() which then calls processAndRenderPlayers()
 
     </script>
 </body>
