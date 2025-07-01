@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ตารางสถานะผู้เล่นแบบเรียลไทม์</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: "Sarabun", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -64,6 +65,7 @@
         .filter-container {
             min-width: 160px;
             user-select: none;
+            flex-grow: 1; /* Allow filter containers to grow */
         }
         label {
             font-weight: 600;
@@ -72,7 +74,7 @@
             color: #34495e;
             font-size: 1rem;
         }
-        select {
+        select, input[type="text"] { /* Apply style to input type text */
             width: 100%;
             padding: 8px 12px;
             font-size: 1rem;
@@ -82,8 +84,9 @@
             color: #2c3e50;
             cursor: pointer;
             transition: border-color 0.25s ease;
+            box-sizing: border-box; /* Include padding and border in the element's total width and height */
         }
-        select:hover, select:focus {
+        select:hover, select:focus, input[type="text"]:hover, input[type="text"]:focus { /* Apply style to input type text */
             border-color: #1d6fa5;
             outline: none;
         }
@@ -93,6 +96,7 @@
             gap: 10px;
             flex-wrap: wrap;
             justify-content: flex-end;
+            flex-grow: 1; /* Allow buttons to grow */
         }
 
         #delete-selected, #refresh-data {
@@ -108,9 +112,6 @@
             white-space: nowrap;
             flex-shrink: 0;
         }
-        #delete-selected {
-            background-color: #e74c3c;
-        }
         #delete-selected:disabled {
             background-color: #c0392b;
             cursor: not-allowed;
@@ -123,15 +124,21 @@
             background-color: #27ae60;
         }
 
+        /* Responsive Table Container */
+        .table-container {
+            width: 100%;
+            max-width: 900px;
+            overflow-x: auto; /* Enables horizontal scrolling for tables on small screens */
+            border-radius: 10px; /* Apply border-radius to container */
+            box-shadow: 0 5px 15px rgb(0 0 0 / 0.1); /* Apply shadow to container */
+            background: white; /* Match table background */
+        }
 
         table {
             border-collapse: collapse;
             width: 100%;
-            max-width: 900px;
+            min-width: 700px; /* Ensure minimum width for desktop view */
             background: white;
-            box-shadow: 0 5px 15px rgb(0 0 0 / 0.1);
-            border-radius: 10px;
-            overflow: hidden;
             user-select: none;
         }
         thead {
@@ -144,6 +151,7 @@
             border-bottom: 1px solid #ddd;
             text-align: center;
             font-size: 1rem;
+            white-space: nowrap; /* Prevent text wrapping in cells by default */
         }
         tbody tr:hover {
             background-color: #f1f7ff;
@@ -306,6 +314,24 @@
         }
 
 
+        @media (max-width: 768px) { /* Adjusted breakpoint for tablets and smaller */
+            .top-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-container, .action-buttons {
+                width: 100%;
+                flex-shrink: 0;
+            }
+            .action-buttons {
+                justify-content: center;
+            }
+            #delete-selected, #refresh-data {
+                width: 100%;
+                box-sizing: border-box; /* Include padding in width calculation */
+            }
+        }
+
         @media (max-width: 600px) {
             .summary {
                 flex-direction: column;
@@ -316,23 +342,9 @@
                 width: 100%;
                 max-width: 300px;
             }
-            .top-controls {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .action-buttons {
-                justify-content: center;
-                width: 100%;
-            }
-            #delete-selected, #refresh-data {
-                width: 100%;
-            }
-            table {
-                max-width: 100%;
-            }
             th, td {
-                padding: 10px 12px; /* Adjust padding for smaller screens */
-                font-size: 0.9rem;
+                padding: 10px 8px; /* Adjust padding for smaller screens */
+                font-size: 0.85rem;
             }
             .modal-content {
                 padding: 20px;
@@ -360,6 +372,11 @@
 
     <div class="top-controls">
         <div class="filter-container">
+            <label for="player-search">ค้นหาชื่อผู้เล่น</label>
+            <input type="text" id="player-search" placeholder="ค้นหา Username หรือ Device ID" aria-label="ค้นหาชื่อผู้เล่น" />
+        </div>
+
+        <div class="filter-container">
             <label for="status-filter">กรองสถานะผู้เล่น</label>
             <select id="status-filter" aria-label="กรองสถานะผู้เล่น">
                 <option value="all" selected>ทั้งหมด</option>
@@ -368,6 +385,13 @@
                 <option value="farming">กำลังฟาร์ม</option>
                 <option value="not-farming">ไม่ฟาร์ม</option>
             </select>
+        </div>
+
+        <div class="filter-container">
+            <label for="device-id-filter">กรอง Device ID</label>
+            <select id="device-id-filter" aria-label="กรอง Device ID">
+                <option value="all" selected>ทั้งหมด</option>
+                </select>
         </div>
 
         <div class="filter-container">
@@ -385,23 +409,26 @@
         </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width: 40px;">#</th>
-                <th style="width: 36px;"><input type="checkbox" id="select-all" title="เลือกทั้งหมด" aria-label="เลือกทั้งหมด" /></th>
-                <th>🧑 Username</th>
-                <th>🖥️ Device ID</th> <th>💸 Cash</th>
-                <th>👥 Player Count</th>
-                <th>📶 Status</th>
-                <th>🎣 สถานะฟาร์ม</th>
-                <th>🕒 Last Online</th>
-                <th>🦶 เตะ!</th>
-            </tr>
-        </thead>
-        <tbody id="player-table">
-        </tbody>
-    </table>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 40px;">#</th>
+                    <th style="width: 36px;"><input type="checkbox" id="select-all" title="เลือกทั้งหมด" aria-label="เลือกทั้งหมด" /></th>
+                    <th>🧑 Username</th>
+                    <th>🖥️ Device ID</th>
+                    <th>💸 Cash</th>
+                    <th>👥 Player Count</th>
+                    <th>📶 Status</th>
+                    <th>🎣 สถานะฟาร์ม</th>
+                    <th>🕒 Last Online</th>
+                    <th>🦶 เตะ!</th>
+                </tr>
+            </thead>
+            <tbody id="player-table">
+            </tbody>
+        </table>
+    </div>
 
     <div id="confirm-modal" class="custom-modal">
         <div class="modal-content">
@@ -430,7 +457,9 @@
         let playersData = []; // This will hold the raw data from Supabase
         let displayedPlayers = []; // This will hold data after filtering/sorting for rendering
 
-        let currentFilter = "all";
+        let currentSearchQuery = ""; // New search query state
+        let currentStatusFilter = "all";
+        let currentDeviceIdFilter = "all";
         let currentSort = "none";
 
         const playerTable = document.getElementById("player-table");
@@ -442,7 +471,9 @@
         const farmingCountEl = document.getElementById("farming-count");
         const notFarmingCountEl = document.getElementById("not-farming-count");
 
-        const statusFilter = document.getElementById("status-filter");
+        const playerSearchInput = document.getElementById("player-search"); // New search input reference
+        const statusFilterSelect = document.getElementById("status-filter");
+        const deviceIdFilterSelect = document.getElementById("device-id-filter");
         const sortCashSelect = document.getElementById("sort-cash");
         const deleteBtn = document.getElementById("delete-selected");
         const refreshBtn = document.getElementById("refresh-data");
@@ -481,7 +512,7 @@
             }
 
             const hours = Math.floor(minutes / 60);
-            const remainingMinutes = minutes % 60;
+            const remainingMinutes = hours % 60; // Corrected calculation for remaining minutes after hours
             if (hours < 24) {
                 return `${hours} ชั่วโมง ${remainingMinutes} นาทีที่แล้ว`;
             }
@@ -563,12 +594,42 @@
                 const data = await res.json();
                 playersData = data;
                 console.log("✅ ดึงข้อมูลสำเร็จ:", playersData.length, "ผู้เล่น");
+                populateDeviceIdFilter(playersData); // Populate device filter after fetching
                 processAndRenderPlayers(); // Process and render all players
             } catch (error) {
                 console.error("❌ ดึงข้อมูลล้มเหลว:", error);
                 showCustomAlert("ดึงข้อมูลล้มเหลว: " + error.message, 8000);
             }
         }
+
+        function populateDeviceIdFilter(data) {
+            const uniqueDeviceIds = new Set();
+            data.forEach(player => {
+                if (player.device_id) {
+                    uniqueDeviceIds.add(player.device_id);
+                }
+            });
+
+            // Clear existing options, but keep "all"
+            deviceIdFilterSelect.innerHTML = '<option value="all" selected>ทั้งหมด</option>';
+            
+            // Add unique device IDs
+            Array.from(uniqueDeviceIds).sort().forEach(deviceId => {
+                const option = document.createElement("option");
+                option.value = deviceId;
+                option.textContent = deviceId;
+                deviceIdFilterSelect.appendChild(option);
+            });
+
+            // Set the current filter back if it still exists
+            if (currentDeviceIdFilter !== "all" && uniqueDeviceIds.has(currentDeviceIdFilter)) {
+                deviceIdFilterSelect.value = currentDeviceIdFilter;
+            } else {
+                currentDeviceIdFilter = "all"; // Reset if the selected device_id is no longer present
+                deviceIdFilterSelect.value = "all";
+            }
+        }
+
 
         async function updatePlayerSupabase(username, updates) {
             console.log(`💡 กำลังส่ง PATCH ไป Supabase สำหรับ ${username}:`, updates);
@@ -583,10 +644,6 @@
                     throw new Error(`Error: ${res.status} ${res.statusText} - ${errorText}`);
                 }
                 console.log(`✅ อัปเดตข้อมูลผู้เล่น ${username} สำเร็จ:`, updates);
-                // After successful update, we can re-process and re-render
-                // to reflect immediate changes if needed, but the periodic fetch
-                // might be enough depending on update frequency.
-                // For 'kick_player' it's usually one-off, so no re-render needed.
             } catch (error) {
                 console.error(`❌ อัปเดตข้อมูลผู้เล่น ${username} ล้มเหลว:`, error);
                 showCustomAlert(`อัปเดตผู้เล่น ${username} ล้มเหลว: ${error.message}`, 8000);
@@ -635,15 +692,34 @@
                 // If player.is_farming is true and they are online, we respect that.
             });
 
-            // Apply filter and sort for display
+            // Apply filters for display
             displayedPlayers = playersData.filter(p => {
-                if (currentFilter === "online") return p.status === "online";
-                if (currentFilter === "offline") return p.status === "offline";
-                if (currentFilter === "farming") return p.is_farming === true && p.status === "online";
-                if (currentFilter === "not-farming") return p.is_farming === false && p.status === "online";
-                return true; // "all"
+                // Search filter
+                const searchLower = currentSearchQuery.toLowerCase();
+                const usernameLower = (p.username || "").toLowerCase();
+                const deviceIdLower = (p.device_id || "").toLowerCase();
+                let searchMatch = true;
+                if (searchLower !== "") {
+                    searchMatch = usernameLower.includes(searchLower) || deviceIdLower.includes(searchLower);
+                }
+
+                // Status filter
+                let statusMatch = true;
+                if (currentStatusFilter === "online") statusMatch = (p.status === "online");
+                else if (currentStatusFilter === "offline") statusMatch = (p.status === "offline");
+                else if (currentStatusFilter === "farming") statusMatch = (p.is_farming === true && p.status === "online");
+                else if (currentStatusFilter === "not-farming") statusMatch = (p.is_farming === false && p.status === "online");
+
+                // Device ID filter
+                let deviceIdMatch = true;
+                if (currentDeviceIdFilter !== "all") {
+                    deviceIdMatch = (p.device_id === currentDeviceIdFilter);
+                }
+
+                return searchMatch && statusMatch && deviceIdMatch;
             });
 
+            // Apply sort for display
             if (currentSort === "desc") {
                 displayedPlayers.sort((a, b) => (b.cash || 0) - (a.cash || 0));
             } else if (currentSort === "asc") {
@@ -654,7 +730,7 @@
             playerTable.innerHTML = "";
             displayedPlayers.forEach((player, index) => {
                 const username = player.username || "ไม่มีชื่อ";
-                const deviceId = player.device_id || "-"; // NEW: Get device_id
+                const deviceId = player.device_id || "-";
                 const cash = player.cash || 0;
                 const playercount = player.playercount ?? "-";
 
@@ -667,7 +743,17 @@
 
                 const lastOnlineDisplay = formatRelativeTime(player.last_online);
 
-                totalCash += cash;
+            });
+
+            // Recalculate summary counts from the full playersData
+            onlineCount = 0;
+            offlineCount = 0;
+            farmingCount = 0;
+            notFarmingCount = 0;
+            totalCash = 0;
+
+            playersData.forEach(player => {
+                totalCash += (player.cash || 0);
                 if (player.status === "online") {
                     onlineCount++;
                     if (player.is_farming) {
@@ -678,13 +764,29 @@
                 } else {
                     offlineCount++;
                 }
+            });
+
+            displayedPlayers.forEach((player, index) => { // Render only displayed players
+                const username = player.username || "ไม่มีชื่อ";
+                const deviceId = player.device_id || "-";
+                const cash = player.cash || 0;
+                const playercount = player.playercount ?? "-";
+
+                const statusDisplay = player.status === "online" ? "ออนไลน์" : "ออฟไลน์";
+                const statusClass = player.status === "online" ? "online" : "offline";
+
+                const farmingStatusDisplay = player.is_farming ? "กำลังฟาร์ม" : "ไม่ฟาร์ม";
+                const farmingStatusClass = player.is_farming ? "farming" : "not-farming";
+
+                const lastOnlineDisplay = formatRelativeTime(player.last_online);
 
                 const tr = document.createElement("tr");
                 tr.innerHTML = `
                     <td>${index + 1}</td>
                     <td><input type="checkbox" class="row-checkbox" data-username="${username}" aria-label="เลือกผู้เล่น ${username}" /></td>
                     <td>${username}</td>
-                    <td>${deviceId}</td> <td>${cash.toLocaleString()}</td>
+                    <td>${deviceId}</td>
+                    <td>${cash.toLocaleString()}</td>
                     <td>${playercount}</td>
                     <td class="${statusClass}">${statusDisplay}</td>
                     <td class="${farmingStatusClass}">${farmingStatusDisplay}</td>
@@ -693,6 +795,7 @@
                 `;
                 playerTable.appendChild(tr);
             });
+
 
             totalPlayersCountEl.innerText = `👥 ผู้เล่นทั้งหมด: ${playersData.length}`;
             totalCashEl.innerText = `💰 เงินรวมทั้งหมด: ${totalCash.toLocaleString()}`;
@@ -749,7 +852,6 @@
         function updateDeleteButtonState() {
             const anyChecked = !!document.querySelector(".row-checkbox:checked");
             deleteBtn.disabled = !anyChecked;
-            // console.log(`[DEBUG] ปุ่มลบสถานะ: ${deleteBtn.disabled ? 'Disabled' : 'Enabled'}`); // Can uncomment for very verbose debug
         }
 
         function updateSelectAllState() {
@@ -832,9 +934,21 @@
             showCustomAlert("ข้อมูลถูกรีเฟรชแล้ว!");
         });
 
-        statusFilter.addEventListener("change", (event) => {
-            currentFilter = event.target.value;
-            console.log(`[FILTER] เปลี่ยนตัวกรองสถานะเป็น: ${currentFilter}`);
+        playerSearchInput.addEventListener("input", (event) => { // Event listener for search input
+            currentSearchQuery = event.target.value.toLowerCase().trim();
+            console.log(`[SEARCH] ค้นหา: ${currentSearchQuery}`);
+            processAndRenderPlayers();
+        });
+
+        statusFilterSelect.addEventListener("change", (event) => {
+            currentStatusFilter = event.target.value;
+            console.log(`[FILTER] เปลี่ยนตัวกรองสถานะเป็น: ${currentStatusFilter}`);
+            processAndRenderPlayers();
+        });
+
+        deviceIdFilterSelect.addEventListener("change", (event) => {
+            currentDeviceIdFilter = event.target.value;
+            console.log(`[FILTER] เปลี่ยนตัวกรอง Device ID เป็น: ${currentDeviceIdFilter}`);
             processAndRenderPlayers();
         });
 
