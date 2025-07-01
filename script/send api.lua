@@ -16,7 +16,10 @@ local DEVICE_IDENTIFIER = "Device_1" -- Default value
 
 -- Global variable to track farming status and last check time
 local isPlayerFarming = false
-local lastFarmGuiCheckTime = tick() -- Time when farming GUI was last confirmed present
+local lastFarmGuiFoundTime = tick() -- Time when farming GUI was last confirmed present
+
+-- NEW: Variable to track how long farming GUI has been missing
+local farmGuiMissingDuration = 0
 
 -- Function to show notifications in Roblox (and print to console)
 local function showNotification(title, text)
@@ -35,10 +38,10 @@ local function getData()
 	local success, result = pcall(function()
 		local gui = player:WaitForChild("PlayerGui", 5)
 		if not gui then
-            warn("⚠️ [DEBUG] PlayerGui ไม่พร้อมใช้งาน")
-            showNotification("ข้อผิดพลาด", "UI ของเกมไม่โหลด กรุณารอสักครู่")
-            return nil
-        end
+			warn("⚠️ [DEBUG] PlayerGui ไม่พร้อมใช้งาน")
+			showNotification("ข้อผิดพลาด", "UI ของเกมไม่โหลด กรุณารอสักครู่")
+			return nil
+		end
 
 		local inventory = gui:FindFirstChild("Inventory", true)
 		local amountLabel
@@ -95,26 +98,35 @@ local function getData()
 			-- If farming GUI is found, player is farming
 			if not isPlayerFarming then
 				print("🎣 [DEBUG] พบ GUI ฟาร์ม: เปลี่ยนสถานะเป็น 'กำลังฟาร์ม'")
-                showNotification("สถานะฟาร์ม", "คุณกำลังฟาร์มอยู่!")
+				showNotification("สถานะฟาร์ม", "คุณกำลังฟาร์มอยู่!")
 			end
 			isPlayerFarming = true
-			lastFarmGuiCheckTime = currentTime -- Reset timer if GUI is found
-		elseif (currentTime - lastFarmGuiCheckTime) > 60 then
-			-- If farming GUI not found for more than 60 seconds
-			if isPlayerFarming then
-				print("🚫 [DEBUG] ไม่พบ GUI ฟาร์มเป็นเวลา 60 วินาที: เปลี่ยนสถานะเป็น 'ไม่ฟาร์ม'")
-				showNotification("สถานะเปลี่ยน", "คุณไม่ได้ฟาร์มแล้ว!")
-			end
-			isPlayerFPlayerFarming = false
+			lastFarmGuiFoundTime = currentTime -- Reset timer if GUI is found
+			farmGuiMissingDuration = 0 -- Reset missing duration
 		else
-			-- If GUI not found but within 60s grace period, maintain current farming status
-			-- This prevents flickering if GUI briefly disappears.
-			print("ℹ️ [DEBUG] ไม่พบ GUI ฟาร์ม แต่ยังอยู่ในช่วงผ่อนผัน 60 วินาที. สถานะฟาร์มปัจจุบัน: " .. tostring(isPlayerFarming))
+			-- If farming GUI is NOT found
+			farmGuiMissingDuration = currentTime - lastFarmGuiFoundTime
+			if isPlayerFarming and farmGuiMissingDuration > 120 then -- Changed from 60 to 120 seconds
+				-- If farming GUI not found for more than 120 seconds AND player was previously farming
+				print(string.format("🚫 [DEBUG] ไม่พบ GUI ฟาร์มเป็นเวลา %.1f วินาที: เปลี่ยนสถานะเป็น 'ไม่ฟาร์ม'", farmGuiMissingDuration))
+				showNotification("สถานะเปลี่ยน", "คุณไม่ได้ฟาร์มแล้ว! (ไม่พบ UI ฟาร์ม)")
+				isPlayerFarming = false
+			elseif not isPlayerFarming and farmGuiMissingDuration > 10 then -- For debugging when not farming and GUI is missing
+				print(string.format("ℹ️ [DEBUG] ไม่พบ GUI ฟาร์มเป็นเวลา %.1f วินาที. สถานะฟาร์มปัจจุบัน: ไม่ฟาร์ม", farmGuiMissingDuration))
+				-- Show notification after a few seconds of GUI missing if not already farming
+				if math.fmod(math.floor(farmGuiMissingDuration), 30) == 0 and farmGuiMissingDuration > 0 then -- Notify every 30 seconds
+                    showNotification("UI ฟาร์มหาย", string.format("ไม่พบ UI ฟาร์มมาแล้ว %d วินาที", math.floor(farmGuiMissingDuration)))
+                end
+			else
+				-- If GUI not found but within 120s grace period, maintain current farming status
+				-- This prevents flickering if GUI briefly disappears.
+				print(string.format("ℹ️ [DEBUG] ไม่พบ GUI ฟาร์ม แต่ยังอยู่ในช่วงผ่อนผัน (%.1f วินาที). สถานะฟาร์มปัจจุบัน: %s", farmGuiMissingDuration, tostring(isPlayerFarming)))
+			end
 		end
 
 		return {
 			username = username,
-            device_id = DEVICE_IDENTIFIER, -- NEW: Include the device ID
+			device_id = DEVICE_IDENTIFIER, -- NEW: Include the device ID
 			cash = cash,
 			playercount = playerCount,
 			status = "online", -- Always report as online if script is running
@@ -136,10 +148,10 @@ end
 local function sendData()
 	local rawData = getData()
 	if not rawData then
-        -- If getData returns nil, it means the cash UI was not ready, so we don't send data.
-        print("🚫 [HTTP] ไม่ส่งข้อมูลไปยัง Supabase เนื่องจาก UI แสดงเงินไม่พร้อม.")
-        return
-    end
+		-- If getData returns nil, it means the cash UI was not ready, so we don't send data.
+		print("🚫 [HTTP] ไม่ส่งข้อมูลไปยัง Supabase เนื่องจาก UI แสดงเงินไม่พร้อม.")
+		return
+	end
 
 	-- 🔒 Kick if more than 15 players in server (Client-side kick)
 	if rawData.playercount > 15 then
