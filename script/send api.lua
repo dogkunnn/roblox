@@ -8,6 +8,12 @@ local supabaseUrl = "https://inlrteqmzgrnhzibkymh.supabase.co"
 local supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlubHJ0ZXFtemdybmh6aWJreW1oIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ4NDMwNjUsImV4cCI6MjA2MDQxOTA2NX0.fHKi5Cy0RfO65OVedadzCTUi26MTSPN5nKs92zNyYFU"
 local playersEndpoint = supabaseUrl .. "/rest/v1/players"
 
+--- NEW: Device Configuration ---
+-- You can change this value for each instance of the client running.
+-- For example, if you have multiple instances, set this to "Device_1", "Device_2", etc.
+local DEVICE_IDENTIFIER = "Device_1" -- Default value
+---------------------------------
+
 -- Global variable to track farming status and last check time
 local isPlayerFarming = false
 local lastFarmGuiCheckTime = tick() -- Time when farming GUI was last confirmed present
@@ -99,7 +105,7 @@ local function getData()
 				print("🚫 [DEBUG] ไม่พบ GUI ฟาร์มเป็นเวลา 60 วินาที: เปลี่ยนสถานะเป็น 'ไม่ฟาร์ม'")
 				showNotification("สถานะเปลี่ยน", "คุณไม่ได้ฟาร์มแล้ว!")
 			end
-			isPlayerFarming = false
+			isPlayerFPlayerFarming = false
 		else
 			-- If GUI not found but within 60s grace period, maintain current farming status
 			-- This prevents flickering if GUI briefly disappears.
@@ -108,6 +114,7 @@ local function getData()
 
 		return {
 			username = username,
+            device_id = DEVICE_IDENTIFIER, -- NEW: Include the device ID
 			cash = cash,
 			playercount = playerCount,
 			status = "online", -- Always report as online if script is running
