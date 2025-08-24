@@ -170,10 +170,10 @@ local function startFishing()
 end
 
 local fishingSpots = {
-    Vector3.new(2853.37, 7.79, 1645.72),
-    Vector3.new(2811.62, 7.62, 1653.06),
-    Vector3.new(2799.40, 8.32, 1652.79),
-    Vector3.new(2784.24, 7.54, 1654.20)
+    Vector3.new(3584.87, 6.73, 2015.37),
+    Vector3.new(3620.27, 6.31, 2007.61),
+    Vector3.new(3632.07, 5.76, 2006.26),
+    Vector3.new(3628.15, 6.01, 2018.22)
 }
 
 local function getRandomFishingSpot()
@@ -188,11 +188,9 @@ end
 
 local function restockItems()
     notify("กำลังเติมเสบียง...", Color3.fromRGB(255, 150, 255))
-    walkTo(Vector3.new(2771.72, 14.14, 1840.51)) -- Warp sign
-    walkTo(Vector3.new(2900.54, 14.14, 1921.17))
-    walkTo(Vector3.new(3017.66, 14.14, 1936.27))
-    walkTo(Vector3.new(3025.93, 14.41, 1912.14))
-    walkTo(Vector3.new(3044.65, 14.41, 1912.99))
+    walkTo(Vector3.new(3576.40, 9.16, 2051.19)) -- Warp sign
+    walkTo(Vector3.new(3251.38, 15.13, 2184.02))
+    walkTo(Vector3.new(2996.73, 14.72, 2280.26))
 
     fireRemote("Supermarket", "Bait", 150)
     fireRemote("Supermarket", "Water", 15)
@@ -200,10 +198,8 @@ local function restockItems()
 
     task.wait(4) -- Wait 4 seconds after buying
 
-    walkTo(Vector3.new(3028.79, 14.41, 1910.04))
-    walkTo(Vector3.new(3019.00, 14.14, 1936.90))
-    walkTo(Vector3.new(2775.78, 14.14, 1862.23))
-    walkTo(Vector3.new(2749.80, 14.14, 1798.53))
+    walkTo(Vector3.new(3243.65, 15.13, 2184.93))
+    walkTo(Vector3.new(3563.53, 10.11, 2052.73))
     notify("เติมเสบียงเสร็จสิ้น.", Color3.fromRGB(150, 255, 200))
 end
 
@@ -212,7 +208,7 @@ local function mainLoop()
     notify("เริ่มการทำงานสคริปต์.", Color3.fromRGB(200, 200, 255))
 
     -- Initial setup
-    walkTo(Vector3.new(2824.22, 14.06, 1714.09))
+    walkTo(Vector3.new(3552.52, 10.39, 2060.70))
     task.wait(1)
     startFishingAtRandomSpot()
 
@@ -286,8 +282,10 @@ local function mainLoop()
 
         if full then
             notify("ช่องเก็บของเต็ม! กำลังขายปลาทั้งหมด...", Color3.fromRGB(255, 100, 100))
-            walkTo(Vector3.new(2771.72, 14.14, 1840.51)) -- Warp sign
-            walkTo(Vector3.new(2840.77, 14.14, 2082.19)) -- Fish selling spot
+            walkTo(Vector3.new(3556.22, 10.31, 2054.88)) -- Warp sign
+            walkTo(Vector3.new(3093.04, 14.31, 2117.39))
+            walkTo(Vector3.new(2856.27, 14.29, 2096.71))
+            walkTo(Vector3.new(2856.40, 17.45, 2110.29)) -- Fish selling spot
             for name, path in pairs(fishList) do
                 local obj = findPath(path)
                 local amount = getAmountFromText(obj)
@@ -300,8 +298,9 @@ local function mainLoop()
             task.wait(4) -- Wait 4 seconds after selling
 
             -- Added walkTo calls after selling
-            walkTo(Vector3.new(2792.81, 14.23, 1902.52))
-            walkTo(Vector3.new(2809.54, 14.23, 1794.68))
+            walkTo(Vector3.new(2858.22, 14.29, 2100.14))
+            walkTo(Vector3.new(3124.72, 14.72, 2116.67))
+            walkTo(Vector3.new(3566.46, 10.10, 2062.65))
 
             startFishingAtRandomSpot()
         end
